@@ -1,0 +1,11 @@
+conda==4.3.21
+matplotlib==2.0.0
+numpy==1.14.0
+numpydoc==0.6.0
+pandas==0.19.2
+pandoc==1.0.2
+pandocfilters==1.4.1
+pathlib2==2.2.1
+scikit-learn==0.19.1
+scipy==1.0.0
+tensorflow==1.2.0
