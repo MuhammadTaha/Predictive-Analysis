@@ -1,11 +1,15 @@
 import argparse
 import pdb
 
+from data import Data
+
 
 parser = argparse.ArgumentParser(description="Predictive Analytics for Rossmann Store Sales")
-parser.add_argument("action", choices=["extract", "visualize", "predict", "eval"])
+parser.add_argument("action", choices=["extract", "load", "visualize", "predict", "eval"])
 
 args = vars(parser.parse_args())
 
 if args["action"] == "extract":
-    print("Extract .zip")
+    Data.extract()
+if args["action"] == "load":
+    data = Data()
