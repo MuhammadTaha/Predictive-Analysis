@@ -49,17 +49,17 @@ eg
 
 A summary of `train.csv` is given here (there are no values missing):
 
-| Feature | Values |
-|---------|--------|
-| Store   | StoreID|
-| Day of Week | {1, ..., 7} |
-| Date | YYYY-MM-DD Date format str |
-| Sales | int |
-| Customers | int |
-| Open | {0,1} |
-| Promo | {0,1} |
-| StateHoliday | {0, 'b', 'a', '0', 'c'} |
-| SchoolHoliday | {0,1} |
+| Feature | Values | Encoding |
+|---------|--------|----------|
+| Store   | StoreID| - 
+| Day of Week | {1, ..., 7} | one hot 7 |
+| Date | YYYY-MM-DD Date format str | int days since some starting point | 
+| Sales | int | int |
+| Customers | int | int |
+| Open | {0,1} | {0,1} |
+| Promo | {0,1} |  {0,1} |
+| StateHoliday | {0, 'b', 'a', '0', 'c'} | one hot 4 |
+| SchoolHoliday | {0,1} |  {0,1} |
 
 # Forecaster
 
