@@ -3,6 +3,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import os
 from sklearn.svm import SVR
+from forecaster import LinearRegressor
+import tensorflow as tf
 
 import pdb
 
@@ -99,12 +101,26 @@ def visualize_time_series():
     plt.savefig(src_dir+"/../plots/weekdays.png")
 
 
-
 def visualize_linear_dependencies():
     # train a linear model and plot the weights
     # visualize time series of predictions
     # scatter plot the most interesting features (with the highest weight)
-    pass
+    with tf.Session() as sess:
+        data = Data()
+        model = LinearRegressor(sess=sess,
+                                plot_dir=src_dir+"/../plots/linear-regression",
+                                features_count=data.features_count)
+        try:
+            model.fit(data)
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+            model.fit(data)
+
+        model.save(src_dir+"/../models")
+
+
+
 
 
 def test():
@@ -117,5 +133,5 @@ def test():
 
 def main():
     #test()
-    visualize_time_series()
+    #visualize_time_series()
     visualize_linear_dependencies()
