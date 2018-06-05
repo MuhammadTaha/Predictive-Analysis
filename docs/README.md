@@ -13,7 +13,7 @@ The `store.csv` has the following features:
 | StoreType                     | {a,b,c,d}     | - |
 | Assortment                    | {a,b,c}     | - |
 | CompetitionDistance           | float | 3 |
-| CompetitionOpenSinceMonth     | {0,...,12} | 354 |
+| CompetitionOpenSinceMonth     | {1,...,12} | 354 |
 | CompetitionOpenSinceYear      | int year (eg 2008) | 354 |
 | Promo2                        | {0,1} | - |
 | Promo2SinceWeek              | {1,...,50 [, ..., 52 ]} | 544 |
