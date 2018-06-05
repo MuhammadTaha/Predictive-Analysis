@@ -51,6 +51,7 @@ class Data():
         self.store_count = self.store.shape[0]
 
         self.epochs = 0
+        self.is_new_epoch = True
 
         if self.is_time_series:
             self._prepare_time_series()
@@ -109,14 +110,15 @@ class Data():
         self.used_this_epoch = set()
 
         # create val data
-        #self.X_val, self.y_val = self._read_rows(self.val_row_ids)
+        self.X_val, self.y_val = self._extract_rows(self.val_row_ids)
 
         # create test data
-        #self.X_test, self.y_test = self._read_rows(self.test_row_ids)
+        #self.X_test, self.y_test = self._extract_rows(self.test_row_ids)
 
     def _new_epoch(self):
         self.used_this_epoch = set()
         self.epochs += 1
+        self.is_new_epoch = True
 
     def next_train_batch(self, batch_size=50):
         """
@@ -144,7 +146,10 @@ class Data():
         :return y: nd.array of shape (batch_size, 1)
         Chooses the store and let's _get_time_series do the rest
         """
-        if len(self.used_this_epoch) == len(self.train_store_ids): self._new_epoch()
+        if len(self.used_this_epoch) == len(self.train_store_ids):
+            self._new_epoch()
+        else:
+            self.is_new_epoch = False
         store_id = random.sample(self.train_store_ids-self.used_this_epoch, 1)[0]
         self.used_this_epoch = self.used_this_epoch.union(set([store_id]))
         return self._get_time_series(store_id)
@@ -155,16 +160,15 @@ class Data():
         :return X: nd.array of shape (batch_size, #features)
         :return y: nd.array of shape (batch_size, 1)
         """
-        if len(self.used_this_epoch) == len(self.train_row_ids): self._new_epoch()
+        if len(self.used_this_epoch) == len(self.train_row_ids):
+            self._new_epoch()
+        else:
+            self.is_new_epoch = False
         batch_size = min(batch_size, len(self.train_row_ids) - len(self.used_this_epoch))
         row_ids = random.sample(self.train_row_ids-self.used_this_epoch, batch_size)
         self.used_this_epoch = self.used_this_epoch.union(set(row_ids))
-        return self._read_rows(row_ids)
+        return self._extract_rows(row_ids)
 
-    def _read_rows(self, row_ids):
-        X = np.array([self._extract_row(i) for i in row_ids])
-        y = np.array([self._extract_label(i) for i in row_ids])
-        return X, y
 
 
     def get_val_data(self):
@@ -183,7 +187,12 @@ class Data():
 
     def _extract_label(self, row_id):
         # extracts the sales from the specified row
-        pass
+        return [self.train.iloc[row_id]["Sales"]]
+
+    def _extract_rows(self, row_ids):
+        X = np.array([self._extract_row(i) for i in row_ids])
+        y = np.array([self._extract_label(i) for i in row_ids])
+        return X, y
 
     def _extract_row(self, row_id):
         """
@@ -280,7 +289,8 @@ class Data():
 
     def _competition_distance(self, value):
         # handles missing values for CompetitionDistance
-        if value is not None: return value
+        #if value is not None and not np.isnan(value): return value
+        if not self._values_missing(value): return value
         return 100 # TODO
 
     def _competition_open(self, store, curr_date):
