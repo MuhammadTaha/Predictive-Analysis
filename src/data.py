@@ -252,7 +252,7 @@ class Data():
         store_id = row["Store"]
         store = self.store.iloc[store_id-1]
 
-        curr_date = datetime.datetime.strptime(row["Date"], '%Y-%m-%d').date()
+        curr_date = self.str_to_date(row["Date"])
 
         store_type = abcd[store["StoreType"]]
         assortment = abc[store["Assortment"]]
@@ -274,6 +274,9 @@ class Data():
         features = np.concatenate((store_type, assortment, [competition_distance, competition_open, promo_since_days,
                   days_since_interval], day_of_week, [open, promo], state_holiday, [school_holiday]))
         return features
+
+    def str_to_date(self, date_str):
+        return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
 
     def _competition_distance(self, value):
         # handles missing values for CompetitionDistance
