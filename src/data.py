@@ -5,6 +5,7 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import random
+from forecaster import AbstractForecaster
 
 import pdb
 
@@ -332,3 +333,43 @@ class Data():
         zip_ref = zipfile.ZipFile(path, 'r')
         zip_ref.extractall(dest)
         zip_ref.close()
+
+
+class PredictedTimeseriesData(Data):
+    """
+    Get predictions of a forecaster in the same way we get true data
+    Can be used to train a feed forward model and then retrieve time series data for plotting
+    """
+    def __init__(self, true_data, forecaster):
+        """
+
+        :param true_data: Data object
+        :param forecaster: str or AbstractForecaster
+        """
+        if isinstance(forecaster, str):
+            forecaster = AbstractForecaster.load_model(forecaster)
+        self.true_data, self.forecaster = true_data, forecaster
+
+        # modified stuff from super().__init__()
+        self.data_dir = true_data.data_dir
+        self.is_time_series = True
+
+        # check if files are extracted
+
+        # load into pandas
+        self.store = true_data.store
+        self.final_test = true_data.final_test
+        self.train = true_data.train
+
+        self.time_count = self.train.shape[0]
+        self.store_count = self.store.shape[0]
+
+        self.epochs = 0
+        self.is_new_epoch = True
+
+        self._prepare_time_series()
+
+    def _extract_label(self, row_id):
+        # extracts the sales from the specified row
+        X = self._extract_rows([row_id])
+        return self.forecaster.predict(X)

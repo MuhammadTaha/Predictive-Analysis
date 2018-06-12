@@ -1,4 +1,4 @@
-from data import Data
+from data import Data, PredictedTimeseriesData
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -110,6 +110,8 @@ def visualize_linear_dependencies():
         model = LinearRegressor(sess=sess,
                                 plot_dir=src_dir+"/../plots/linear-regression",
                                 features_count=data.features_count)
+        sess.run(tf.global_variables_initializer())
+
         try:
             model.fit(data)
         except Exception as e:
@@ -117,7 +119,23 @@ def visualize_linear_dependencies():
             pdb.set_trace()
             model.fit(data)
 
-        model.save(src_dir+"/../models")
+        model.save()
+        pdb.set_trace()
+
+
+def visualize_predictions(forecaster, data, output_dir):
+    """
+    visualizes predictions for a forecaster
+    :param forecaster: AbstractForecaster or str where to load a forecaster
+    :param data: Data object
+    :param output_dir: str where to save the plots
+    Visualizations:
+    - Avg prediction per day
+    - predictions for some random stores
+    """
+    predicted = PredictedTimeseriesData(data, forecaster)
+
+
 
 
 
