@@ -9,9 +9,12 @@ from sklearn.model_selection import cross_val_score
 import tensorflow as tf
 from matplotlib import pyplot as plt
 import numpy as np
+import logging
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
 
+logger = logging.getLogger("forecaster")
+logger.setLevel(logging.DEBUG)
 
 class AbstractForecaster(ABC):
     """
@@ -91,7 +94,7 @@ class AbstractForecaster(ABC):
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        joblib.dump(self, os.path.join(MODEL_DIR, file_name))
+        # joblib.dump(self, os.path.join(MODEL_DIR, file_name))
         return os.path.join(MODEL_DIR, file_name)
 
     @staticmethod
@@ -113,6 +116,11 @@ class FeedForward(AbstractForecaster):
         - how to handle the session
         - adds save/restore logic for tf.session
         - placeholders, loss and train_step should always have this name
+
+        The session must be initialized from outside.
+        If we do it from here, we would possibly reinitialize variables that were not defined here,
+        eg we would destroy another trained model. (I couldn't find a way to initialize only the variables
+        used by this class)
     """
     def __init__(self, features_count=25, sess=None, plot_dir=None, batch_size=100):
         """
@@ -148,9 +156,6 @@ class FeedForward(AbstractForecaster):
         self.loss = tf.sqrt(tf.reduce_mean(tf.square((self.output - self.true_sales) / self.true_sales)))
         optimizer = tf.train.AdamOptimizer()
         self.train_step = optimizer.minimize(self.loss)
-
-        init_op = None  # override
-        self.sess.run(init_op)
         self.saver = tf.train.Saver([optimizer.variables()])
 
     def score(self, X, y):
@@ -165,11 +170,13 @@ class FeedForward(AbstractForecaster):
         w_old, w_curr, b_old, b_curr = 0, 0, 0, 0
         train_losses, val_losses, val_times = [], [], []
         train_step = 0
+
         while np.allclose(w_old, w_curr) and np.allclose(b_old, b_curr) or data.epochs < 1:
             w_old, b_old = self.sess.run([self.weights, self.bias])
             X, y = data.next_train_batch(self.batch_size)
             train_loss, _ = self.sess.run([self.loss, self.train_step],
                                     feed_dict={self.input: X, self.true_sales: y})
+            logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
             train_losses.append(train_loss)
             if self.plot_dir is not None and data.is_new_epoch:
                 val_loss = self.sess.run(self.loss,
@@ -220,8 +227,6 @@ class LinearRegressor(FeedForward):
         self.train_step = optimizer.minimize(self.loss)
 
         self.saver = tf.train.Saver([self.weights, self.bias])
-        init_op = tf.variables_initializer([self.weights, self.bias, optimizer.variables()])
-        self.sess.run(init_op)
 
 
 class LinearLogRegressor(FeedForward):
@@ -246,8 +251,6 @@ class LinearLogRegressor(FeedForward):
         self.train_step = optimizer.minimize(self.loss)
 
         self.saver = tf.train.Saver([self.weights, self.bias])
-        init_op = tf.variables_initializer([self.weights, self.bias_1, bias_2, optimizer.variables()])
-        self.sess.run(init_op)
 
 
 class FeedForwardNN1(FeedForward):
@@ -314,10 +317,4 @@ class FeedForwardNN1(FeedForward):
         self.train_step = optimizer.minimize(self.loss)
 
         self.saver = tf.train.Saver([self.weights, self.bias_1, self.bias_2])
-        init_op = tf.variables_initializer([self.weights, self.biases, optimizer.variables()])
-        self.sess.run(init_op)
-
-
-
-
 
