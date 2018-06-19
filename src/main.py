@@ -1,7 +1,13 @@
 import argparse
 import time
 # imports happen after the action is chosen, because this scripts starts faster that way
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
 
+x = np.linspace(0, 20, 100)  # Create a list of evenly-spaced numbers over the range
+plt.plot(x, np.sin(x))       # Plot the sine of each x point
+plt.show()
 start_time = time.time()
 
 parser = argparse.ArgumentParser(description="Predictive Analytics for Rossmann Store Sales")
