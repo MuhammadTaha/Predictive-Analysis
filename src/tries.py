@@ -9,29 +9,51 @@ from forecaster import *
 import os
 """
 Todo:
-    - _get_time_series
     - plot predictions
         - 
     - next batch schreiben für time series, das kleine stücke einer time series nimmt
 """
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
+
 def howmanyfeatures():
     print("We currently have {} features".format(Data().features_count))
+
 
 def linear_regression():
     with tf.Session() as sess:
         model = LinearRegressor(sess=sess,
                                 plot_dir=src_dir + "/../plots/linear-regression",
                                 features_count=25)
-        try:
+        """
+        try:   
             model.load_params("models/LinearRegressor2018-06-06-00:01_params")
         except tf.errors.NotFoundError as e:
             data = Data()
+            sess.run(tf.global_variables_initializer())
             model.fit(data)
             print("Save model to ", model.save())
+        """
+        data = Data()
+        sess.run(tf.global_variables_initializer())
+        model.fit(data)
+        print("Save model to ", model.save())
+
 
         visualize_predictions(model, src_dir + "/../plots/linear-regression")
+
+
+def feedforwardnn():
+    with tf.Session() as sess:
+        model = FeedForwardNN1(sess=sess,
+                                plot_dir=src_dir + "/../plots/feed-forward-nn",
+                                features_count=25)
+        sess.run(tf.global_variables_initializer())
+        data = Data()
+        model.fit(data)
+        print("Save model to ", model.save())
+
+        visualize_predictions(model, src_dir + "/../plots/feed-forward-nn")
 
 
 def time_series_example():
@@ -41,6 +63,7 @@ def time_series_example():
         days, _, y = data._get_time_series(store)
         print("Labels for store {}: {}".format(store, y.shape))
         print("Day index for each row", days)
+
 
 def test_order_of_dates():
     data = TimeSeriesData()
@@ -57,10 +80,8 @@ def main():
     #  choose the methods to try here
     #  time_series_example()
     #  howmanyfeatures()
-
-    test_order_of_dates()
-
-    time_series_example()
-
-    #linear_regression()
-    pass
+    #  test_order_of_dates()
+    #  time_series_example()
+    #
+    linear_regression()
+    #feedforwardnn()
