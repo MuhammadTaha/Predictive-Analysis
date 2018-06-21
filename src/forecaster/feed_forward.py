@@ -1,4 +1,5 @@
 from .abstract_forecaster import *
+import uuid
 import pdb
 
 EPS = 1
@@ -59,11 +60,15 @@ class FeedForward(AbstractForecaster):
         return self.sess.run(self.output, feed_dict={self.input: X})
 
     def _train(self, data):
+        os.makedirs(".temp", exist_ok=True)
+        name = self.__class__.__name__ + str(uuid.uuid4())[:5]
+
         print("({}) Start training".format(self.__class__.__name__))
         # linear regression can't overfit, so as stopping criterion we take that the changes are small
         w_old, w_curr, b_old, b_curr = 0, 0, 0, 0
         train_losses, val_losses, val_times = [np.inf], [np.inf], [np.inf]
         train_step = 0
+
 
         while data.epochs - np.argmax(val_losses) < EPOCHS_BEFORE_STOP: # no improvement in the last 10 epochs
             X, y = data.next_train_batch(self.batch_size)
@@ -77,10 +82,16 @@ class FeedForward(AbstractForecaster):
                 val_loss = self.sess.run(self.loss,
                                          feed_dict={self.input: data.X_val, self.true_sales: data.y_val})
                 val_losses.append(val_loss)
+
+                if val_loss == max(val_losses):
+                    self.saver.save(self.sess, ".temp/{}_params".format(name))
+
                 val_times.append(train_step)
                 print("({}) Step {}: Train loss {} \n Val loss {}".format(
                     self.__class__.__name__, train_step, train_losses, val_losses))
             train_step += 1
+
+        self.saver.restore(self.sess, ".temp/{}_params".format(name))
 
         if self.plot_dir is not None:
             self._train_plot(train_losses, val_losses, val_times)
