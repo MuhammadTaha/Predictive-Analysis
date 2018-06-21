@@ -83,5 +83,5 @@ def main():
     #  test_order_of_dates()
     #  time_series_example()
     #
-    linear_regression()
-    #feedforwardnn()
+    #linear_regression()
+    feedforwardnn()
