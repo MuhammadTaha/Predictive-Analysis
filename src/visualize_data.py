@@ -1,8 +1,10 @@
-from data import Data
+from data import Data, PredictedTimeseriesData
 from matplotlib import pyplot as plt
 import numpy as np
 import os
 from sklearn.svm import SVR
+from forecaster import LinearRegressor
+import tensorflow as tf
 
 import pdb
 
@@ -14,7 +16,6 @@ def smooth(vals, gamma=1):
     return svr.predict(X)
 
 def _time_series_plots(days, date_keys, sales, name):
-    return
     target_dir = src_dir + "/../plots/" + name
     try: os.makedirs(target_dir)
     except FileExistsError: pass
@@ -68,7 +69,7 @@ def _time_series_plots(days, date_keys, sales, name):
 
 
 def visualize_time_series():
-    data = Data(is_time_series=True)
+    data = Data()
     # for each date: show avg sales + variance
     # for each date: show how many rows we have
     date_keys = sorted(data.train.Date.unique())
@@ -99,23 +100,73 @@ def visualize_time_series():
     plt.savefig(src_dir+"/../plots/weekdays.png")
 
 
-
 def visualize_linear_dependencies():
     # train a linear model and plot the weights
     # visualize time series of predictions
     # scatter plot the most interesting features (with the highest weight)
-    pass
+    with tf.Session() as sess:
+        data = Data()
+        model = LinearRegressor(sess=sess,
+                                plot_dir=src_dir+"/../plots/linear-regression",
+                                features_count=data.features_count)
+        sess.run(tf.global_variables_initializer())
+
+        try:
+            model.fit(data)
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+            model.fit(data)
+
+        model.save()
+        pdb.set_trace()
 
 
-def test():
-    x = np.array(range(100))
-    y = np.random.normal(0,1,100) + 0.5*5
-    plt.plot(x,y,".")
-    plt.plot(x,smooth(y))
-    plt.savefig(src_dir+"../plots/test.png")
+def visualize_predictions(forecaster, data, output_dir):
+    """
+    visualizes predictions for a forecaster
+    :param forecaster: AbstractForecaster or str where to load a forecaster
+    :param data: Data object
+    :param output_dir: str where to save the plots
+    Visualizations:
+    - Avg prediction per day
+    - predictions for some random stores
+    """
+    predicted = PredictedTimeseriesData(data, forecaster)
+
+    data = Data(is_time_series=True)
+    # for each date: show avg sales + variance
+    # for each date: show how many rows we have
+    date_keys = sorted(data.train.Date.unique())
+    dates = [data.str_to_date(i) for i in date_keys]
+    days = [(i - dates[0]).days for i in dates]
+    print("We have data for each date between {} and {} : {}".format(date_keys[0], date_keys[-1],
+                                                                     days == list(range(len(days)))))
+
+    def sales_for(date):
+        return np.array(data.train.loc[data.train["Date"] == date]["Sales"])
+
+    sales = [sales_for(i) for i in date_keys]
+    _time_series_plots(days, date_keys, sales, "all")
+
+    # plot of single week days
+    def mean(wd_sales):
+        return np.mean([np.mean(i) for i in wd_sales])
+
+    wd_avg = []
+    for week_day, name in enumerate(["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Monday"]):
+        wd_sales = sales[week_day::7]
+        _time_series_plots(days[week_day::7], date_keys[week_day::7], wd_sales, name)
+        wd_avg.append(mean(wd_sales))
+    wd_avg = wd_avg[-1:] + wd_avg[:-1]  # so that it starts with monday
+
+    plt.bar(range(7), wd_avg)
+    plt.xticks(range(7), ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"])
+    plt.ylabel("Average Sales")
+    plt.savefig(src_dir + "/../plots/weekdays.png")
+
 
 
 def main():
-    #test()
     visualize_time_series()
-    visualize_linear_dependencies()
+    #visualize_linear_dependencies()
