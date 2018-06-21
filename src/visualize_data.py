@@ -16,7 +16,6 @@ def smooth(vals, gamma=1):
     return svr.predict(X)
 
 def _time_series_plots(days, date_keys, sales, name):
-    return
     target_dir = src_dir + "/../plots/" + name
     try: os.makedirs(target_dir)
     except FileExistsError: pass

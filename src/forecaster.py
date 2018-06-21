@@ -10,11 +10,14 @@ import tensorflow as tf
 from matplotlib import pyplot as plt
 import numpy as np
 import logging
+from visualize_predictions import visualize_predictions
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
 
 logger = logging.getLogger("forecaster")
 logger.setLevel(logging.DEBUG)
+
+EPOCHS_BEFORE_STOP = 1  # number of epochs with no improvement before training is stopped
 
 class AbstractForecaster(ABC):
     """
@@ -58,7 +61,7 @@ class AbstractForecaster(ABC):
         """
         assert self.trained, "Model is not trained cannot predict"
         X = check_array(X)
-        return self._decision_function(self, X)
+        return self._decision_function(X)
 
     @abstractmethod
     def _decision_function(self, X):
@@ -124,7 +127,6 @@ class FeedForward(AbstractForecaster):
     """
     def __init__(self, features_count=25, sess=None, plot_dir=None, batch_size=100):
         """
-            simple linear regression
         :param features_count: #features of X
         :param sess: tf.Session to use, per default, a new session will be created.
                     The session must be closed from outside
@@ -168,22 +170,22 @@ class FeedForward(AbstractForecaster):
     def _train(self, data):
         # linear regression can't overfit, so as stopping criterion we take that the changes are small
         w_old, w_curr, b_old, b_curr = 0, 0, 0, 0
-        train_losses, val_losses, val_times = [], [], []
+        train_losses, val_losses, val_times = [np.inf], [np.inf], [np.inf]
         train_step = 0
 
-        while np.allclose(w_old, w_curr) and np.allclose(b_old, b_curr) or data.epochs < 1:
-            w_old, b_old = self.sess.run([self.weights, self.bias])
+        while train_step - np.argmax(val_losses) < EPOCHS_BEFORE_STOP: # no improvement in the last 10 epochs
             X, y = data.next_train_batch(self.batch_size)
             train_loss, _ = self.sess.run([self.loss, self.train_step],
                                     feed_dict={self.input: X, self.true_sales: y})
             logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
             train_losses.append(train_loss)
+            if train_step % 1000 == 0:
+                visualize_predictions(self, self.plot_dir+"/train{}".format(train_step))
             if self.plot_dir is not None and data.is_new_epoch:
                 val_loss = self.sess.run(self.loss,
                                          feed_dict={self.input: data.X_val, self.true_sales: data.y_val})
                 val_losses.append(val_loss)
                 val_times.append(train_step)
-            w_curr, b_curr = self.sess.run([self.weights, self.bias])
             train_step += 1
 
         if self.plot_dir is not None:
@@ -201,6 +203,7 @@ class FeedForward(AbstractForecaster):
 
     def load_params(self, file_name):
         self.saver.restore(self.sess, file_name)
+        self.trained = True
 
     @staticmethod
     def load_model(file_name):
@@ -259,9 +262,9 @@ class FeedForwardNN1(FeedForward):
         :param hidden_features: list of how many neurons each hidden layer should have
         :param predict_logs: predict log(y)
         """
-        super().__init(features_count=features_count, sess=sess, plot_dir=plot_dir, batch_size=batch_size)
         self.hidden_features = hidden_features
         self.predict_logs = predict_logs
+        super().__init__(features_count=features_count, sess=sess, plot_dir=plot_dir, batch_size=batch_size)
 
     def _build(self):
         # placeholders
@@ -316,5 +319,5 @@ class FeedForwardNN1(FeedForward):
         optimizer = tf.train.AdamOptimizer()
         self.train_step = optimizer.minimize(self.loss)
 
-        self.saver = tf.train.Saver([self.weights, self.bias_1, self.bias_2])
+        self.saver = tf.train.Saver(self.weights + self.biases)
 
