@@ -20,38 +20,37 @@ def howmanyfeatures():
     print("We currently have {} features".format(Data().features_count))
 
 
-def linear_regression():
+def linear_regression(train_new=False):
     with tf.Session() as sess:
         model = LinearRegressor(sess=sess,
                                 plot_dir=src_dir + "/../plots/linear-regression",
                                 features_count=25)
-        """
-        try:   
-            model.load_params("models/LinearRegressor2018-06-06-00:01_params")
-        except tf.errors.NotFoundError as e:
+
+        try:
+            assert not train_new
+            model.load_params("models/LinearRegressor2018-06-21-20:31_params")
+        except (tf.errors.NotFoundError, AssertionError) as e:
             data = Data()
             sess.run(tf.global_variables_initializer())
             model.fit(data)
             print("Save model to ", model.save())
-        """
-        data = Data()
-        sess.run(tf.global_variables_initializer())
-        model.fit(data)
-        print("Save model to ", model.save())
-
 
         visualize_predictions(model, src_dir + "/../plots/linear-regression")
 
 
-def feedforwardnn():
+def feedforwardnn(train_new=False):
     with tf.Session() as sess:
         model = FeedForwardNN1(sess=sess,
                                 plot_dir=src_dir + "/../plots/feed-forward-nn",
                                 features_count=25)
-        sess.run(tf.global_variables_initializer())
-        data = Data()
-        model.fit(data)
-        print("Save model to ", model.save())
+        try:
+            assert not train_new
+            model.load_params("models/FeedForwardNN12018-06-21-20:31_params")
+        except (tf.errors.NotFoundError, AssertionError) as e:
+            data = Data()
+            sess.run(tf.global_variables_initializer())
+            model.fit(data)
+            print("Save model to ", model.save())
 
         visualize_predictions(model, src_dir + "/../plots/feed-forward-nn")
 
@@ -83,5 +82,5 @@ def main():
     #  test_order_of_dates()
     #  time_series_example()
     #
-    linear_regression()
-    #feedforwardnn()
+    #linear_regression(train_new=True)
+    feedforwardnn(train_new=True)

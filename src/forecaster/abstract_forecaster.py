@@ -16,7 +16,7 @@ MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../mode
 logger = logging.getLogger("forecaster")
 logger.setLevel(logging.DEBUG)
 
-EPOCHS_BEFORE_STOP = 1  # number of epochs with no improvement before training is stopped
+EPOCHS_BEFORE_STOP = 10  # number of epochs with no improvement before training is stopped
 
 class AbstractForecaster(ABC):
     """
