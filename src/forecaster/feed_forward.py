@@ -4,6 +4,15 @@ import pdb
 
 EPS = 1
 
+
+def early_stopping(train_step, val_losses, epochs):
+    return train_step < 2000
+
+
+def early_stopping_(train_step, val_losses, epochs):
+    return len(val_losses) - np.argmax(val_losses) < EPOCHS_BEFORE_STOP
+
+
 class FeedForward(AbstractForecaster):
     """
         Abstract class for feed forward models
@@ -70,7 +79,7 @@ class FeedForward(AbstractForecaster):
         train_step = 0
 
 
-        while data.epochs - np.argmax(val_losses) < EPOCHS_BEFORE_STOP: # no improvement in the last 10 epochs
+        while early_stopping(train_step, val_losses, data.epochs): # no improvement in the last 10 epochs
             X, y = data.next_train_batch(self.batch_size)
             train_loss, _ = self.sess.run([self.loss, self.train_step],
                                     feed_dict={self.input: X, self.true_sales: y})
@@ -78,17 +87,17 @@ class FeedForward(AbstractForecaster):
             print("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
             train_losses.append(train_loss)
 
-            if self.plot_dir is not None and data.is_new_epoch:
+            if data.is_new_epoch or train_step % 100 == 0:
                 val_loss = self.sess.run(self.loss,
                                          feed_dict={self.input: data.X_val, self.true_sales: data.y_val})
                 val_losses.append(val_loss)
 
-                if val_loss == max(val_losses):
+                if val_loss == min(val_losses[1:]):
                     self.saver.save(self.sess, ".temp/{}_params".format(name))
+                    print("saved")
 
                 val_times.append(train_step)
-                print("({}) Step {}: Train loss {} \n Val loss {}".format(
-                    self.__class__.__name__, train_step, train_losses, val_losses))
+                print("({}) Step {}: Val loss {}".format(self.__class__.__name__, train_step, val_loss))
             train_step += 1
 
         self.saver.restore(self.sess, ".temp/{}_params".format(name))
