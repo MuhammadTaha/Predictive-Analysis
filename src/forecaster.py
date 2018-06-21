@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from sklearn.utils.validation import check_X_y, check_array
 from sklearn.externals import joblib
-from sklearn.model_selection
 import os
 import datetime
-from evaluate import Backtesting
+from src.evaluate import Backtesting
 from sklearn.model_selection import cross_val_score
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
