@@ -1,14 +1,22 @@
 from abc import ABC, abstractmethod
 from sklearn.utils.validation import check_X_y, check_array
 from sklearn.externals import joblib
-from sklearn.model_selection
+from sklearn import model_selection
 import os
 import datetime
 from evaluate import Backtesting
 from sklearn.model_selection import cross_val_score
+import tensorflow as tf
+from matplotlib import pyplot as plt
+import numpy as np
+import logging
 
-MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../models")
+MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
 
+logger = logging.getLogger("forecaster")
+logger.setLevel(logging.DEBUG)
+
+EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training is stopped
 
 class AbstractForecaster(ABC):
     """
@@ -30,17 +38,17 @@ class AbstractForecaster(ABC):
         self.trained = False
         pass
 
-    def fit(self, X, y=None):
+    def fit(self, data):
         """
             Function to fit new models.
         :return: trained model
         """
-        X, y = check_X_y(X, y, y_numeric=True, warn_on_dtype=True)
+        X, y = check_X_y(data.X_val, data.y_val, y_numeric=True, warn_on_dtype=True)
         self.trained = True
-        return self._train(X, y)
+        return self._train(data)
 
     @abstractmethod
-    def _train(self, X, y=None):
+    def _train(self, data):
         """
             Override with your model training function
         """
@@ -52,7 +60,7 @@ class AbstractForecaster(ABC):
         """
         assert self.trained, "Model is not trained cannot predict"
         X = check_array(X)
-        return self._decision_function(self, X)
+        return self._decision_function(X)
 
     @abstractmethod
     def _decision_function(self, X):
@@ -88,8 +96,20 @@ class AbstractForecaster(ABC):
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        joblib.dump(self, os.path.join(MODEL_DIR, file_name))
+        # joblib.dump(self, os.path.join(MODEL_DIR, file_name))
+        return os.path.join(MODEL_DIR, file_name)
 
     @staticmethod
     def load_model(file_name):
         return joblib.load(os.path.join(MODEL_DIR, file_name))
+
+
+def weight_variable(shape):
+    return tf.Variable(tf.truncated_normal(shape, stddev=0.1))
+
+
+def bias_variable(shape): return tf.Variable(tf.constant(0.1, shape=shape))
+
+
+
+
