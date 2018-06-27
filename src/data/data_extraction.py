@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import random
-from forecaster import AbstractForecaster
+# from forecaster import AbstractForecaster
 
 import pdb
 
@@ -20,7 +20,7 @@ import pdb
 
 
 class DataExtraction():
-    def __init__(self, dir="data", p_train=0.6, p_val=0.2, p_test=0.2):
+    def __init__(self, dir="../data", p_train=0.6, p_val=0.2, p_test=0.2):
         """
         :param dir: location of data.zip
         :param p_train: percentage of the labeled data used for training
@@ -39,7 +39,7 @@ class DataExtraction():
         if set(os.listdir(dir)) >= set(["sample_submission.csv", "store.csv", "test.csv", "train.csv"]):
             print("Data is extracted already")
         else:
-            Data.extract(dir + "/data.zip", dir)
+            DataExtraction.extract(dir + "/data.zip", dir)
 
         # load into pandas
         self.store = pd.read_csv(dir + "/store.csv")
