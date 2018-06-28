@@ -67,9 +67,6 @@ class AbstractForecaster(ABC):
         X = check_array(X)
         y = self._decision_function(X)
 
-        import pdb; pdb.set_trace()
-        print("y shape", y.shape)
-
         try:
             assert all(y == y*X[:, FEATURES["open"], None])
         except AssertionError:
