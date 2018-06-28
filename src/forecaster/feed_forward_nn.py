@@ -65,6 +65,8 @@ class FeedForwardNN1(FeedForward):
         else:
             self.output = tf.exp(tf.matmul(self.layers[-1], self.weights[-1]) + self.biases[-1])
 
+        self._predict_zero_if_closed()
+
         # training
         # loss is Root Mean Square Percentage Error (RMSPE) (kaggle.com/c/rossmann-store-sales#evaluation)
         self.loss = tf.sqrt(tf.reduce_mean(tf.square((self.output-self.true_sales + EPS)/(self.true_sales+EPS))))
