@@ -50,8 +50,8 @@ def visualize_predictions(forecaster, output_dir):
     :param forecaster: AbstractForecaster or str where to load a forecaster
     :param output_dir: str where to save the plots
     Visualizations:
-    - Avg prediction per day
-    - predictions for some random stores
+    - Avg prediction and error per day
+    - predictions and error for a random store
     """
     data = TimeSeriesData()
     date_keys = sorted(data.train.Date.unique())
@@ -72,5 +72,5 @@ def visualize_predictions(forecaster, output_dir):
     # plot random store
     store_id = np.random.randint(1, data.store_count)
     row_ids = data.train.index[data.Store == store_id]
-    plot_rows(data, forecaster, row_ids, "Store-{}".format(store_id), output_dir)
+    plot_rows(data=data, forecaster=forecaster, row_ids=row_ids, name="Store-{}".format(store_id), output_dir=output_dir)
 
