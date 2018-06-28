@@ -10,6 +10,10 @@ import tensorflow as tf
 from matplotlib import pyplot as plt
 import numpy as np
 import logging
+import json
+
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../features.json"), "r") as file:
+    FEATURES = json.load(file)
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
 
@@ -60,7 +64,14 @@ class AbstractForecaster(ABC):
         """
         assert self.trained, "Model is not trained cannot predict"
         X = check_array(X)
-        return self._decision_function(X)
+        y = self._decision_function(X)
+
+        try:
+            assert all(y == y*X[:, FEATURES["open"]])
+        except AssertionError:
+            print("({}) Warning: Original prediction not zero for rows where stores are closed")
+
+        return y * X[:, FEATURES["open"]]
 
     @abstractmethod
     def _decision_function(self, X):

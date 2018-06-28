@@ -7,12 +7,7 @@ import pdb
 import tensorflow as tf
 from forecaster import *
 import os
-"""
-Todo:
-    - plot predictions
-        - 
-    - next batch schreiben für time series, das kleine stücke einer time series nimmt
-"""
+
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -22,15 +17,15 @@ def howmanyfeatures():
 
 def linear_regression(train_new=False):
     with tf.Session() as sess:
+        data = Data(toy=True)
         model = LinearRegressor(sess=sess,
                                 plot_dir=src_dir + "/../plots/linear-regression",
-                                features_count=25)
+                                features_count=data.features_count)
 
         try:
             assert not train_new
             model.load_params("models/LinearRegressor2018-06-21-20:31_params")
         except (tf.errors.NotFoundError, AssertionError) as e:
-            data = Data()
             sess.run(tf.global_variables_initializer())
             model.fit(data)
             print("Save model to ", model.save())
@@ -40,14 +35,14 @@ def linear_regression(train_new=False):
 
 def feedforwardnn(train_new=False):
     with tf.Session() as sess:
+        data = Data(toy=True)
         model = FeedForwardNN1(sess=sess,
-                                plot_dir=src_dir + "/../plots/feed-forward-nn",
-                                features_count=25)
+                               plot_dir=src_dir + "/../plots/feed-forward-nn",
+                               features_count=data.features_count)
         try:
             assert not train_new
             model.load_params("models/FeedForwardNN12018-06-21-20:31_params")
         except (tf.errors.NotFoundError, AssertionError) as e:
-            data = Data()
             sess.run(tf.global_variables_initializer())
             model.fit(data)
             print("Save model to ", model.save())
@@ -75,6 +70,13 @@ def test_order_of_dates():
     print("Date steps", days)
 
 
+def naive_classifier():
+    data = Data(toy=True)
+    model = NaiveForecaster()
+    print("Naive forecaster score:", model.score(data.X_val, data.y_val))
+    visualize_predictions(model, src_dir + "/../plots/naive_forecaster")
+
+
 def main():
     #  choose the methods to try here
     #  time_series_example()
@@ -83,4 +85,5 @@ def main():
     #  time_series_example()
     #
     #linear_regression(train_new=True)
-    feedforwardnn(train_new=True)
+    #feedforwardnn(train_new=True)
+    naive_classifier()
