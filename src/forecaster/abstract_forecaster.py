@@ -61,17 +61,21 @@ class AbstractForecaster(ABC):
     def predict(self, X):
         """
             Predict y values for input matrix X
+            y.shape = (#samples, 1)
         """
         assert self.trained, "Model is not trained cannot predict"
         X = check_array(X)
         y = self._decision_function(X)
 
+        import pdb; pdb.set_trace()
+        print("y shape", y.shape)
+
         try:
-            assert all(y == y*X[:, FEATURES["open"]])
+            assert all(y == y*X[:, FEATURES["open"], None])
         except AssertionError:
             print("({}) Warning: Original prediction not zero for rows where stores are closed")
 
-        return y * X[:, FEATURES["open"]]
+        return y * X[:, FEATURES["open"], None]
 
     @abstractmethod
     def _decision_function(self, X):
