@@ -17,10 +17,12 @@ import pdb
 - Provides a method to fetch the next train data batch
 - Estimates missing data
 """
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
+DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
 
 
-class DataExtraction():
-    def __init__(self, dir="../data", p_train=0.6, p_val=0.2, p_test=0.2):
+class DataExtraction:
+    def __init__(self, dir=DATA_DIR, p_train=0.6, p_val=0.2, p_test=0.2):
         """
         :param dir: location of data.zip
         :param p_train: percentage of the labeled data used for training
@@ -45,6 +47,11 @@ class DataExtraction():
         self.store = pd.read_csv(dir + "/store.csv")
         self.final_test = pd.read_csv(dir + "/test.csv")
         self.train = pd.read_csv(dir + "/train.csv")
+
+        # clean stores with no sales and closed
+        self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
+        # sort sales from old to new
+        self.train = self.train.sort_index(ascending=False)
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]

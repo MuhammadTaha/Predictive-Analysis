@@ -8,6 +8,7 @@ from sklearn.model_selection import cross_val_score
 import tensorflow as tf
 import logging
 from src.data.feature_enum import STATE_HOLIDAY, OPEN, DAY_OF_WEEK, abcd
+from src.evaluate import Backtesting
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
 
@@ -94,15 +95,15 @@ class AbstractForecaster(ABC):
         return backtesting_instance.evaluate()
 
     @abstractmethod
-    def score(self, X, y=None):
+    def score(self, data):
         """
             used to get an impression of the performance of the current model.
         """
-        return cross_val_score(self, X, y)
+        pass
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        # joblib.dump(self, os.path.join(MODEL_DIR, file_name))
+        joblib.dump(self, os.path.join(MODEL_DIR, file_name))
         return os.path.join(MODEL_DIR, file_name)
 
     @staticmethod

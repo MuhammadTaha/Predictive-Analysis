@@ -7,7 +7,7 @@ from sklearn.metrics import precision_score
 from sklearn.externals import joblib
 from sklearn.model_selection import GridSearchCV
 from src.forecaster.XGBForecaster import XGBForecaster
-from src.data import Data
+from src.data.feedforward_data import Data
 
 
 def test1():
@@ -67,17 +67,21 @@ def test1():
 
 
 def test2():
-    boston = datasets.load_boston()
-    data = Data()
+    data = Data.load_data()
+    # print(len(data.y_test))
+    # data.save()
+    # exit(0)
+    # params = {'reg_alpha': 0.8407902514954478, 'max_depth': 14, 'learning_rate': 0.08579491614428596,
+    #           'gamma': 0.7967508936551793, **XGBForecaster.initial_params}
+    forecaster = XGBForecaster.load_model("XGBForecaster2018-07-03-16:01")
 
-    # X = boston.data
-    # y = boston.target
-    forecaster = XGBForecaster()
-    X_train, X_test, y_train, y_test = train_test_split(data.X_val, data.y_val, test_size=0.2, random_state=35)
-    print(X_train[0])
-    exit(0)
-    forecaster._train(X_train, y_train)
-    forecaster.score(X_test, y_test)
+    # print(len(data.X_val) + len(data.X_test))
+    # data.X_val, X_test, data.y_val, y_test = train_test_split(data.X_val, data.y_val, test_size=0.2, random_state=35)
+    # print(len(data.X_val))
+    # exit(0)
+    # forecaster.fit(data)
+    print("validating")
+    forecaster.score(data)
 
 
 if __name__ == '__main__':
