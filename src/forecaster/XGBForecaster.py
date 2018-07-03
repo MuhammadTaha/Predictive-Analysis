@@ -59,7 +59,10 @@ class XGBForecaster(AbstractForecaster):
         error = self.rmspe(y, predictions)
         print("Validtaion score: {:.4f}".format(error))
         return error
+    
+    
 
+    
     def _search_hyper_params(self, X_train, y_train):
         
         initial_model = xgb.XGBRegressor(**self.initial_params)
