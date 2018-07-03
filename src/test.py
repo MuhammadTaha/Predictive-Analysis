@@ -6,12 +6,15 @@ import numpy as np
 from sklearn.metrics import precision_score
 from sklearn.externals import joblib
 from sklearn.model_selection import GridSearchCV
+from src.forecaster.XGBForecaster import XGBForecaster
+from src.data import Data
 
-if __name__ == '__main__':
+
+def test1():
     iris = datasets.load_breast_cancer()
     X = iris.data
     y = iris.target
-
+    print(y)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # use DMatrix for xgbosot
@@ -19,10 +22,10 @@ if __name__ == '__main__':
     dtest = xgb.DMatrix(X_test, label=y_test)
 
     # use svmlight file for xgboost
-    # dump_svmlight_file(X_train, y_train, 'dtrain.svm', zero_based=True)
-    # dump_svmlight_file(X_test, y_test, 'dtest.svm', zero_based=True)
-    # dtrain_svm = xgb.DMatrix('dtrain.svm')
-    # dtest_svm = xgb.DMatrix('dtest.svm')
+    dump_svmlight_file(X_train, y_train, 'dtrain.svm', zero_based=True)
+    dump_svmlight_file(X_test, y_test, 'dtest.svm', zero_based=True)
+    dtrain_svm = xgb.DMatrix('dtrain.svm')
+    dtest_svm = xgb.DMatrix('dtest.svm')
 
     # set xgboost params
     param = {
@@ -36,9 +39,7 @@ if __name__ == '__main__':
     # ------------- numpy array ------------------
     # training and testing - numpy matrices
 
-    bst = xgb.Booster()
-    bst
-    bst = bst.train(param, dtrain, num_round)
+    bst = xgb.train(param, dtrain, num_round)
     print(type(bst))
     preds = bst.predict(dtest)
 
@@ -48,18 +49,36 @@ if __name__ == '__main__':
 
     # ------------- svm file ---------------------
     # training and testing - svm file
-    # bst_svm = xgb.train(param, dtrain_svm, num_round)
-    # preds = bst.predict(dtest_svm)
+    bst_svm = xgb.train(param, dtrain_svm, num_round)
+    preds = bst.predict(dtest_svm)
 
     # extracting most confident predictions
-    # best_preds_svm = [np.argmax(line) for line in preds]
-    # print("Svm file precision:", precision_score(y_test, best_preds_svm, average='macro'))
+    best_preds_svm = [np.argmax(line) for line in preds]
+    print("Svm file precision:", precision_score(y_test, best_preds_svm, average='macro'))
     # --------------------------------------------
 
     # dump the models
-    # bst.dump_model('dump.raw.txt')
-    # bst_svm.dump_model('dump_svm.raw.txt')
+    bst.dump_model('dump.raw.txt')
+    bst_svm.dump_model('dump_svm.raw.txt')
 
     # save the models for later
-    # joblib.dump(bst, 'bst_model.pkl', compress=True)
-    # joblib.dump(bst_svm, 'bst_svm_model.pkl', compress=True)
+    joblib.dump(bst, 'bst_model.pkl', compress=True)
+    joblib.dump(bst_svm, 'bst_svm_model.pkl', compress=True)
+
+
+def test2():
+    boston = datasets.load_boston()
+    data = Data()
+
+    # X = boston.data
+    # y = boston.target
+    forecaster = XGBForecaster()
+    X_train, X_test, y_train, y_test = train_test_split(data.X_val, data.y_val, test_size=0.2, random_state=35)
+    print(X_train[0])
+    exit(0)
+    forecaster._train(X_train, y_train)
+    forecaster.score(X_test, y_test)
+
+
+if __name__ == '__main__':
+    test2()
