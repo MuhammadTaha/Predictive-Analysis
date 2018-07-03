@@ -3,5 +3,4 @@ data/*.csv
 .idea/*
 *.pyc
 data/.~lock.store.csv#
-models/*
 .temp

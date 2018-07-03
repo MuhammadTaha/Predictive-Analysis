@@ -2,8 +2,11 @@ import argparse
 import time
 # imports happen after the action is chosen, because this scripts starts faster that way
 
+start_time = time.time()
+
 parser = argparse.ArgumentParser(description="Predictive Analytics for Rossmann Store Sales")
 parser.add_argument("action", choices=["extract", "load", "visualize", "predict", "eval", "test", "try"])
+
 
 args = vars(parser.parse_args())
 
