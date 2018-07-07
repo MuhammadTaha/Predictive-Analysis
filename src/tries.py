@@ -1,12 +1,11 @@
 """
 This is for tries that should not ent up in the actual app
 """
-from data import *
 from visualize_predictions import visualize_predictions
 import pdb
 import tensorflow as tf
 from forecaster import *
-import os
+from data import *
 
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -131,7 +130,10 @@ def main():
     #  test_order_of_dates()
     #  time_series_example()
     #
-    #linear_regression(train_new=False)
+    # linear_regression(train_new=False)
+    print("hello world")
+    AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
     #feedforwardnn(train_new=True)
     #naive_classifier()
-    try_model_wo_sess(NaiveForecaster2)
+    # try_model_wo_sess(NaiveForecaster2)
+

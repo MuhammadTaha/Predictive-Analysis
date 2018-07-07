@@ -41,7 +41,7 @@ class DataExtraction():
         if set(os.listdir(dir)) >= set(["sample_submission.csv", "store.csv", "test.csv", "train.csv"]):
             print("Data is extracted already")
         else:
-            Data.extract(dir + "/data.zip", dir)
+            DataExtraction.extract(dir + "/data.zip", dir)
 
         # load into pandas
         self.store = pd.read_csv(dir + "/store.csv")
