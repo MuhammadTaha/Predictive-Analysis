@@ -7,12 +7,7 @@ import pdb
 import tensorflow as tf
 from forecaster import *
 import os
-"""
-Todo:
-    - plot predictions
-        - 
-    - next batch schreiben für time series, das kleine stücke einer time series nimmt
-"""
+
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -22,15 +17,15 @@ def howmanyfeatures():
 
 def linear_regression(train_new=False):
     with tf.Session() as sess:
+        data = Data(toy=True)
         model = LinearRegressor(sess=sess,
                                 plot_dir=src_dir + "/../plots/linear-regression",
-                                features_count=25)
+                                features_count=data.features_count)
 
         try:
             assert not train_new
-            model.load_params("models/LinearRegressor2018-06-21-20:31_params")
+            model.load_params("models/LinearRegressor2018-06-28-22:55")
         except (tf.errors.NotFoundError, AssertionError) as e:
-            data = Data()
             sess.run(tf.global_variables_initializer())
             model.fit(data)
             print("Save model to ", model.save())
@@ -40,14 +35,17 @@ def linear_regression(train_new=False):
 
 def feedforwardnn(train_new=False):
     with tf.Session() as sess:
+        data = Data(toy=True)
         model = FeedForwardNN1(sess=sess,
-                                plot_dir=src_dir + "/../plots/feed-forward-nn",
-                                features_count=25)
+                               plot_dir=src_dir + "/../plots/feed-forward-nn",
+                               features_count=data.features_count)
         try:
             assert not train_new
-            model.load_params("models/FeedForwardNN12018-06-21-20:31_params")
+            model.load_params("models/LinearRegressor2018-06-28-22:55")
         except (tf.errors.NotFoundError, AssertionError) as e:
-            data = Data()
+            if not train_new:
+                print(e)
+                print("Starting new training")
             sess.run(tf.global_variables_initializer())
             model.fit(data)
             print("Save model to ", model.save())
@@ -58,7 +56,7 @@ def feedforwardnn(train_new=False):
 def time_series_example():
     # how to use time series data
     data = TimeSeriesData()
-    for store in range(1119):
+    for store in range(1115):
         days, _, y = data._get_time_series(store)
         print("Labels for store {}: {}".format(store, y.shape))
         print("Day index for each row", days)
@@ -75,6 +73,57 @@ def test_order_of_dates():
     print("Date steps", days)
 
 
+def naive_classifier():
+    data = Data(toy=True)
+    print("y shape of data", data.y_val.shape)
+    model = NaiveForecaster()
+    print("Naive forecaster score:", model.score(data.X_val, data.y_val))
+    p = model.predict(data.X_val)
+    diff = np.array([p, data.y_val])
+    print("diff", diff.shape)
+    pdb.set_trace()
+    visualize_predictions(model, src_dir + "/../plots/naive_forecaster")
+
+
+def try_tf_model(model_type, plot_dir=None, load_from=None):
+    if plot_dir is not None:
+        plot_dir = src_dir + "/../plots/{}".format(model_type.__name__)
+
+    with tf.Session() as sess:
+        data = Data(toy=True)
+        model = model_type(sess=sess,
+                           plot_dir=plot_dir,
+                           features_count=data.features_count)
+        try:
+            assert load_from is not None
+            model.load_params(load_from)
+        except (tf.errors.NotFoundError, AssertionError) as e:
+            if load_from is not None:
+                print(e)
+                print("Starting new training")
+            sess.run(tf.global_variables_initializer())
+            model.fit(data)
+            print("Save model to ", model.save())
+
+        visualize_predictions(model, plot_dir)
+
+
+def try_model_wo_sess(model_type, plot_dir=None):
+    if plot_dir is not None:
+        plot_dir = src_dir + "/../plots/{}".format(model_type.__name__)
+
+    data = Data(toy=True)
+    model = model_type()
+
+    model.fit(data)
+    print("score:", model.score(data.X_val, data.y_val))
+    p = model.predict(data.X_val)
+    diff = np.array([p, data.y_val])[:,:,0].T
+    print("diff", diff.shape)
+
+    visualize_predictions(model, plot_dir)
+
+
 def main():
     #  choose the methods to try here
     #  time_series_example()
@@ -82,5 +131,7 @@ def main():
     #  test_order_of_dates()
     #  time_series_example()
     #
-    #linear_regression(train_new=True)
-    feedforwardnn(train_new=True)
+    #linear_regression(train_new=False)
+    #feedforwardnn(train_new=True)
+    #naive_classifier()
+    try_model_wo_sess(NaiveForecaster2)

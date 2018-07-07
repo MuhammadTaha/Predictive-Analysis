@@ -61,9 +61,42 @@ A summary of `train.csv` is given here (there are no values missing):
 | StateHoliday | {0, 'b', 'a', '0', 'c'} | one hot 4 |
 | SchoolHoliday | {0,1} |  {0,1} |
 
-# Forecaster
+# Code structure
 
-Here we can collect ideas for the forecaster.
+A description of what happens where
+
+- `main.py` cli of the app. Argparse happens here, you can add new commands (for model selection etc) here
+- `data` package for data and feature extraction ( `class DataExtraction`) and the `class Data` for these tasks:
+    - Split the data in test/validatation/train data
+    - next_train_batch() gives the next train batch, this should now always return a list of data of only one store, and for consecutive dates. As I mentioned in #17 your function should also add as feature the sales of the last days, so it will be next_train_batch(forecaster). Validation and test data can no longer be passed as single batch, because the network can only process one time series at a time. The solution that comes to my mind is to implement validation_batches(forecaster) that give a list of time series like [(X_1, y_1), (X_2, y_2), ...]
+    - return only data from one store if specified to do so in the constructor
+- `forecaster` package
+...
+
+# Visualize predictions
+The following example loads a model and creates some default plots for the trained model:
+- Avg prediction and error per day
+- predictions and error for a random store
+
+```python
+    with tf.Session() as sess:
+        model = FeedForwardNN1(sess=sess,
+                                plot_dir=src_dir + "/../plots/example-model",
+                                features_count=25)
+        model.load_params("models/<some_model>_params")
+
+        visualize_predictions(model, src_dir + "/../plots/example-model")
+```
+
+To add plots for other subsets of rows, have a look at how the plots for the random store are generated: (taken from `visualize_predictions.py`)
+
+```python
+    # plot random store
+    data = TimeSeriesData()
+    store_id = np.random.randint(1, data.store_count)
+    row_ids = data.train.index[data.Store == store_id]
+    plot_rows(data=data, forecaster=forecaster, row_ids=row_ids, name="Store-{}".format(store_id), output_dir=output_dir)
+```
 
 ## Recurrent Neural Network
 - What exactly are the time series? (One for each store?)

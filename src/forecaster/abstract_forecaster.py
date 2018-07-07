@@ -9,6 +9,10 @@ import tensorflow as tf
 import logging
 from src.data.feature_enum import STATE_HOLIDAY, OPEN, DAY_OF_WEEK, abcd
 from src.evaluate import Backtesting
+import json
+
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../features.json"), "r") as file:
+    FEATURES = json.load(file)
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
 
@@ -16,7 +20,6 @@ logger = logging.getLogger("forecaster")
 logger.setLevel(logging.DEBUG)
 
 EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training is stopped
-
 
 class AbstractForecaster(ABC):
     """
@@ -57,12 +60,18 @@ class AbstractForecaster(ABC):
     def predict(self, X):
         """
             Predict y values for input matrix X
+            y.shape = (#samples, 1)
         """
         assert self.trained, "Model is not trained cannot predict"
         X = check_array(X)
-        if self.is_store_closed(X):
-            return 0
-        return self._decision_function(X)
+        y = self._decision_function(X)
+
+        try:
+            assert all(y == y*X[:, FEATURES["open"], None])
+        except AssertionError:
+            print("({}) Warning: Original prediction not zero for rows where stores are closed")
+
+        return y * X[:, FEATURES["open"], None]
 
     @abstractmethod
     def _decision_function(self, X):
@@ -70,11 +79,6 @@ class AbstractForecaster(ABC):
             Here comes the logic of your predictions
         """
         pass
-
-    def is_store_closed(self, X):
-        if X[OPEN] == 0 or X[STATE_HOLIDAY] != abcd['d']:
-            return True
-        return False
 
     @abstractmethod
     def _build(self):
@@ -116,3 +120,7 @@ def weight_variable(shape):
 
 
 def bias_variable(shape): return tf.Variable(tf.constant(0.1, shape=shape))
+
+
+
+

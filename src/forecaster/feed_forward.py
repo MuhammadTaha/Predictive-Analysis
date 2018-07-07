@@ -61,6 +61,11 @@ class FeedForward(AbstractForecaster):
         self.train_step = optimizer.minimize(self.loss)
         self.saver = tf.train.Saver([optimizer.variables()])
 
+    def _predict_zero_if_closed(self):
+        self.output *= self.input * tf.constant(
+            np.eye(self.input.shape[1])[FEATURES["open"]][None, ...]  # e_18 in shape (1 <broadcasts to #samples>, features_count)
+            , dtype=tf.float32)
+
     def score(self, X, y):
         return self.sess.run(self.loss,
                              feed_dict={self.input: X, self.true_sales: y})

@@ -12,6 +12,7 @@ from .data_extraction import DataExtraction
 from src.data.data_extraction import DATA_DIR, DATA_PICKLE_FILE
 
 
+
 class Data(DataExtraction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

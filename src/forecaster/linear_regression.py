@@ -11,6 +11,7 @@ class LinearRegressor(FeedForward):
         self.weights = weight_variable([self.features_count, 1])
         self.bias = bias_variable([1, 1])
         self.output = tf.matmul(self.input, self.weights) + self.bias
+        self._predict_zero_if_closed()
 
         # training
         # loss is Root Mean Square Percentage Error (RMSPE) (kaggle.com/c/rossmann-store-sales#evaluation)
