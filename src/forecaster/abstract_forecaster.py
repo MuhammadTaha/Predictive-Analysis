@@ -4,11 +4,12 @@ from sklearn.externals import joblib
 from sklearn import model_selection
 import os
 import datetime
+from evaluate import Backtesting
 from sklearn.model_selection import cross_val_score
 import tensorflow as tf
+from matplotlib import pyplot as plt
+import numpy as np
 import logging
-from src.data.feature_enum import STATE_HOLIDAY, OPEN, DAY_OF_WEEK, abcd
-from src.evaluate import Backtesting
 import json
 
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../features.json"), "r") as file:
@@ -99,15 +100,15 @@ class AbstractForecaster(ABC):
         return backtesting_instance.evaluate()
 
     @abstractmethod
-    def score(self, data):
+    def score(self, X, y=None):
         """
             used to get an impression of the performance of the current model.
         """
-        pass
+        return cross_val_score(self, X, y)
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        joblib.dump(self, os.path.join(MODEL_DIR, file_name))
+        # joblib.dump(self, os.path.join(MODEL_DIR, file_name))
         return os.path.join(MODEL_DIR, file_name)
 
     @staticmethod
