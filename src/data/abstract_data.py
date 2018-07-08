@@ -1,3 +1,4 @@
+from .data_extraction import *
 import pandas as pd
 import zipfile
 import os
@@ -5,8 +6,9 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import random
-from .data_extraction import DataExtraction
-import json
+
+
+
 
 global feature_constants
 class AbstractData(DataExtraction):
@@ -60,7 +62,7 @@ class AbstractData(DataExtraction):
         # df = df[df["Store"] == store_id].iloc[:batch_size]
 
         # print(df)
-        print(df[df["Store"] == store_id].iloc[:batch_size])
+        # print(df[df["Store"] == store_id].iloc[:batch_size])
 
         # self.X_val, self.y_val = df[df["Store"] == store_id].iloc[:batch_size]
         # print(self.X_val, self.y_val)
@@ -68,7 +70,18 @@ class AbstractData(DataExtraction):
 
         # print(df.loc[ :batch_size ,df["Store"]== 3])
         # print(dataExtract._extract_rows([2]))
-        return df[df["Store"] == store_id].iloc[:batch_size]
+
+        result  =  df[df["Store"] == store_id].iloc[:batch_size]
+
+        x = (batch_size,result.values)
+        y= (batch_size,store_id)
+        # d = Data()
+
+        # print(result.values)
+        # return df[df["Store"] == store_id].iloc[:batch_size]
+
+        return x,y
+
 
     def get_val_data(self):
         """
@@ -84,4 +97,11 @@ class AbstractData(DataExtraction):
         """
         return self.X_test, self.y_test
 
-    def validation_batches(self):
+    def validation_batches(self,forecaster = "linear regressor"):
+        result = df[df["Store"] == store_id].iloc[:batch_size]
+        x = (batch_size, result)
+        # d = Data()
+        d = DataExtraction()
+        df = d.final_test
+        # print(df.values)
+        return df.values
