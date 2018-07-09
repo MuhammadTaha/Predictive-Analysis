@@ -10,14 +10,12 @@ def weight(y):
     w = np.zeros(y.shape, dtype=float)
     ind = y != 0
     w[ind] = 1. / (y[ind] ** 2)
-    return w
-
+    return
 
 def rmspe(yhat, y):
     w = ToWeight(y)
     rmspe = np.sqrt(np.mean(w * (y - yhat) ** 2))
     return rmspe
-
 
 def rmspe_xg(yhat, y):
     # y = y.values
@@ -27,7 +25,6 @@ def rmspe_xg(yhat, y):
     w = ToWeight(y)
     rmspe = np.sqrt(np.mean(w * (y - yhat) ** 2))
     return "rmspe", rmspe
-
 
 # Gather some features
 def build_features(features, data):
