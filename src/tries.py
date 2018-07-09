@@ -133,6 +133,8 @@ def main():
     # linear_regression(train_new=False)
     print("hello world")
     AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
+    AbstractData.validation_batches(AbstractData,forecaster = "linear regressor")
+
     #feedforwardnn(train_new=True)
     #naive_classifier()
     # try_model_wo_sess(NaiveForecaster2)

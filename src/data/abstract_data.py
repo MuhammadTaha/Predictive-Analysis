@@ -76,7 +76,8 @@ class AbstractData(DataExtraction):
         x = (batch_size,result.values)
         y= (batch_size,store_id)
         # d = Data()
-
+        print(x)
+        print(y)
         # print(result.values)
         # return df[df["Store"] == store_id].iloc[:batch_size]
 
@@ -98,10 +99,10 @@ class AbstractData(DataExtraction):
         return self.X_test, self.y_test
 
     def validation_batches(self,forecaster = "linear regressor"):
-        result = df[df["Store"] == store_id].iloc[:batch_size]
-        x = (batch_size, result)
+        # result = df[df["Store"] == store_id].iloc[:batch_size]
+        # x = (batch_size, result)
         # d = Data()
         d = DataExtraction()
-        df = d.final_test
-        # print(df.values)
-        return df.values
+        dfinal = d.final_test
+        print(dfinal.values)
+        return dfinal.values
