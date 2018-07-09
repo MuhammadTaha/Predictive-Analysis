@@ -36,11 +36,11 @@ class Data():
         #store = store.load_store()
         #store.data[0:1]
 
-        X = self.store.iloc[:, [2, 3]].values
+        '''X = self.store.iloc[:, [2, 3]].values
         y = self.store.iloc[:, -1].values
 
         X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.25, random_state=1000)
-        
+        '''
         sc_X = StandardScaler()
         X_train = sc_X.fit_transform(X_train)
         X_test = sc_X.transform(X_test)
@@ -69,7 +69,7 @@ def create_model(optimizer='rmsprop'):
     model.add(Dense(1))
     model.add(Activation('sigmoid'))
 
-    model.compile(loss='binary_crossentropy',
+    model.compile(loss='binary_cross_entropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
 
