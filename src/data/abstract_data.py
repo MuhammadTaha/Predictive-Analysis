@@ -9,15 +9,15 @@ from .data_extraction import DataExtraction
 import json
 
 global feature_constants
+
+
 class AbstractData(DataExtraction):
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
         self._prepare_random_batches()
         # with open('features.json') as f:
         #     feature_constants = json.load(f)
         #     print(feature_constants)
-
 
     def _prepare_random_batches(self):
         # splits the rows into train, val and test rows
@@ -34,7 +34,7 @@ class AbstractData(DataExtraction):
         # create test data
         # self.X_test, self.y_test = self._extract_rows(self.test_row_ids)
 
-    def next_train_batch(self, store_id = 1, forecaster= "linear regressor", batch_size=50):
+    def next_train_batch(self, store_id=1, forecaster="linear regressor", batch_size=50):
         """
         :param forecastor: Type of forecastor for batch selection
         :param batch_size: Number of rows, ignored if self.is_time_series is True
@@ -51,7 +51,7 @@ class AbstractData(DataExtraction):
         # return self._extract_rows(row_ids)
         # with open('src/features.json') as f:
         #     feature_constants = json.load(f)
-            # print(feature_constants)
+        # print(feature_constants)
 
         dataExtract = DataExtraction()
         df = dataExtract.train
@@ -85,3 +85,4 @@ class AbstractData(DataExtraction):
         return self.X_test, self.y_test
 
     def validation_batches(self):
+        pass
