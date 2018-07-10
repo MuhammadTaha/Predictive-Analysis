@@ -10,6 +10,7 @@ from forecaster.XGBForecaster import XGBForecaster
 from data.feedforward_data import Data
 
 
+
 def test2():
     try:
         data = Data.load_data()

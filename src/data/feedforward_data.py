@@ -9,7 +9,7 @@ import random
 from sklearn.externals import joblib
 
 from .data_extraction import DataExtraction
-from src.data.data_extraction import DATA_DIR, DATA_PICKLE_FILE
+from data.data_extraction import DATA_DIR, DATA_PICKLE_FILE
 
 
 

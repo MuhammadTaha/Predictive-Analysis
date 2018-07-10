@@ -1,7 +1,7 @@
 # from sklearn.cross_validation import train_test_split
 
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
-from src.forecaster import AbstractForecaster
+from forecaster import AbstractForecaster
 import xgboost as xgb
 import numpy as np
 

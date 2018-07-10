@@ -7,8 +7,8 @@ import datetime
 from sklearn.model_selection import cross_val_score
 import tensorflow as tf
 import logging
-from src.data.feature_enum import STATE_HOLIDAY, OPEN, DAY_OF_WEEK, abcd
-from src.evaluate import Backtesting
+from data.feature_enum import STATE_HOLIDAY, OPEN, DAY_OF_WEEK, abcd
+from evaluate import Backtesting
 import json
 
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../features.json"), "r") as file:
