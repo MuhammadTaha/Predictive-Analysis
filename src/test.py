@@ -6,8 +6,8 @@ import numpy as np
 from sklearn.metrics import precision_score
 from sklearn.externals import joblib
 from sklearn.model_selection import GridSearchCV
-from src.forecaster.XGBForecaster import XGBForecaster
-from src.data.feedforward_data import Data
+from forecaster.XGBForecaster import XGBForecaster
+from data.feedforward_data import Data
 
 
 def test2():
