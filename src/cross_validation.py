@@ -60,6 +60,7 @@ def create_model(optimizer='rmsprop'):
                   metrics=['accuracy'])
     return model
 
+'''
 #LSTM
     model = Sequential()
     model.add(Embedding(max_features, 256, input_length=maxlen))
@@ -92,7 +93,7 @@ def create_model(optimizer='rmsprop'):
 
     grid_results = grid.fit(X_train,Y_train)
 
-
+'''
 def cross_validate(model, features_data, classification_data, n_folds):
     """
     Cross-validate the given model using n_folds folds.
