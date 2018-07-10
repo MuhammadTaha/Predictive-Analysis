@@ -46,7 +46,6 @@ class XGBForecaster(AbstractForecaster):
         dtest = xgb.DMatrix(X_test, y_test)
         watchlist = [(dtrain, 'train'), (dtest, 'test')]
         self.model = xgb.train(self.params, dtrain, self.n_rounds, evals=watchlist, feval=self.rmspe_xg)
-        self.save()
 
     def _decision_function(self, X):
         return self.model.predict(xgb.DMatrix(X))

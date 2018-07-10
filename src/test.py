@@ -10,13 +10,13 @@ from forecaster.XGBForecaster import XGBForecaster
 from data.feedforward_data import Data
 
 
-
 def test2():
     try:
         data = Data.load_data()
     except:
         data = Data()
         data.save()
+
     try:
         forecaster = XGBForecaster.load_model("XGBForecaster2018-07-03-16:01")
     except:
@@ -27,4 +27,6 @@ def test2():
 
 
 if __name__ == '__main__':
+    print()
+    exit(0)
     test2()
