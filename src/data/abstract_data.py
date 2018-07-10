@@ -1,14 +1,12 @@
-import pandas as pd
-import zipfile
-import os
-import tensorflow as tf
-import numpy as np
-import datetime
-import random
-from .data_extraction import DataExtraction
-import json
+
+try:
+    from src.data.data_extraction import  DataExtraction
+except ModuleNotFoundError:
+    from .data_extraction import DataExtraction
 
 global feature_constants
+
+
 class AbstractData(DataExtraction):
     def __init__(self, *args, **kwargs):
 
@@ -85,3 +83,4 @@ class AbstractData(DataExtraction):
         return self.X_test, self.y_test
 
     def validation_batches(self):
+        pass

@@ -1,4 +1,9 @@
-from .feed_forward import *
+import tensorflow as tf
+
+try:
+    from src.forecaster.feed_forward import *
+except:
+    from .feed_forward import *
 
 
 class LinearRegressor(FeedForward):
@@ -26,6 +31,7 @@ class LinearLogRegressor(FeedForward):
     """
     Linear regression of log(y)
     """
+
     def _build(self):
         # placeholders
         self.input = tf.placeholder(dtype=tf.float32, shape=[None, self.features_count])

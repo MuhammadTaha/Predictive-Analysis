@@ -1,16 +1,13 @@
-import pandas as pd
-import zipfile
 import os
-import tensorflow as tf
-import numpy as np
-import datetime
 import random
 
 from sklearn.externals import joblib
 
-from .data_extraction import DataExtraction
-from src.data.data_extraction import DATA_DIR, DATA_PICKLE_FILE
-
+try:
+    from src.data.data_extraction import  DataExtraction, DATA_DIR, DATA_PICKLE_FILE
+except ModuleNotFoundError:
+    from .data_extraction import DataExtraction
+    from .data_extraction import DATA_DIR, DATA_PICKLE_FILE
 
 
 class Data(DataExtraction):

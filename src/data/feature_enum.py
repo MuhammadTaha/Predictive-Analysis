@@ -11,6 +11,9 @@ OPEN = 18
 PROMO = 19
 STATE_HOLIDAY = [20, 21, 22, 23]
 SCHOOL_HOLIDAY = 24
+WEEKDAY_STORE_AVG = 25
+WEEK_OF_YEAR_AVG = 26
+
 abcd = {
     "a": [1, 0, 0, 0],
     "b": [0, 1, 0, 0],

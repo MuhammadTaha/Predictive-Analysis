@@ -1,10 +1,7 @@
-import pandas as pd
-import zipfile
-import os
-import tensorflow as tf
-import numpy as np
-import datetime
-from .data_extraction import DataExtraction
+try:
+    from src.data.data_extraction import DataExtraction
+except ModuleNotFoundError:
+    from .data_extraction import DataExtraction
 
 
 class TimeSeriesData(DataExtraction):

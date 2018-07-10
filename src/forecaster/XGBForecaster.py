@@ -1,10 +1,15 @@
 # from sklearn.cross_validation import train_test_split
 
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
-from src.forecaster import AbstractForecaster
 import xgboost as xgb
 import numpy as np
+try:
+    from src.forecaster.abstract_forecaster import AbstractForecaster
+except ModuleNotFoundError:
+    print("Use relative import without src")
+    from .abstract_forecaster import AbstractForecaster
 
+EPS = 0.1
 
 class XGBForecaster(AbstractForecaster):
     params_grid = {
@@ -67,7 +72,7 @@ class XGBForecaster(AbstractForecaster):
 
     @staticmethod
     def rmspe(y, yhat):
-        return np.sqrt(np.mean((yhat / y - 1) ** 2))
+        return np.sqrt(np.mean((yhat / y - 1) ** 2 + EPS))
 
     @staticmethod
     def rmspe_xg(yhat, y):
