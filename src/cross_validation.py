@@ -1,48 +1,39 @@
-import pandas
-from sklearn.naive_bayes import GaussianNB
-from sklearn import metrics
-from sklearn.model_selection import StratifiedKFold
+from sklearn.grid_search import GridSearchCV
+from sklearn.svm import SVC
+pipe_svc = Pipeline([('scl', StandardScaler()),
 
+('clf', SVC(random_state=1))])
+param_range = [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]
+param_grid = [{'clf__C': param_range,
+                'clf__kernel': ['linear']},
 
-def import_data():
-    # import total dataset
-    data = pandas.read_csv('iris_data.csv')
+                {'clf__C': param_range,
+                'clf__gamma': param_range,
 
-    # get a list of column names
-    headers = list(data.columns.values)
+                'clf__kernel': ['rbf']}]
+gs = GridSearchCV(estimator=pipe_svc,
+param_grid=param_grid, scoring='accuracy', cv=10, n_jobs=-1)
+gs = gs.fit(X_train, y_train)
+print(gs.best_score_)
+print(gs.best_params_)
 
-    # separate into independent and dependent variables
-    x = data[headers[0.1:1.0]]
-    y = data[headers[-1:]].values.ravel()
+'''
+#nested cross validation for multi-ml algorithms
+gs = GridSearchCV(estimator=pipe_svc,
+param_grid=param_grid, scoring='accuracy', cv=10, n_jobs=-1)
+scores = cross_val_score(gs, X, y, scoring='accuracy', cv=5)
+print('CV accuracy: %.3f +/- %.3f' % ( np.mean(scores), np.std(scores)))
+'''
 
-    return x, y
-
-if __name__ == '__main__':
-    # get training and testing sets
-    x, y = import_data()
-
-    # set to 10 folds
-    skf = StratifiedKFold(n_splits=10)
-
-    # blank lists to store predicted values and actual values
-    predicted_y = []
-    expected_y = []
-
-    # partition data
-    for train_index, test_index in skf.split(x, y):
-        x_train, x_test = x.loc[train_index], x.loc[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-
-        # create and fit classifier
-        classifier = GaussianNB()
-        classifier.fit(x_train, y_train)
-
-        # store result from classification
-        predicted_y.extend(classifier.predict(x_test))
-
-        # store expected result for this specific fold
-        expected_y.extend(y_test)
-
-    # save and print accuracy
-    accuracy = metrics.accuracy_score(expected_y, predicted_y)
-print("Accuracy: " + accuracy.__str__())
+from sklearn.tree import DecisionTreeClassifier
+gs = GridSearchCV(
+     estimator=DecisionTreeClassifier(random_state=0),
+     param_grid=[
+           {'max_depth': [1, 2, 3, 4, None]}],
+     scoring='accuracy',
+     cv=5)
+scores = cross_val_score(gs,X_train,y_train,
+     scoring='accuracy',
+     cv=5)
+print('CV accuracy: %.1f +/- %.1f' % (
+                    np.mean(scores), np.std(scores)))
