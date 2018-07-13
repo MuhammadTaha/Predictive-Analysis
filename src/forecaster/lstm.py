@@ -6,8 +6,8 @@
 # import tensorflow as tf
 # import numpy as np
 # import datetime
-# import random
-#
+# # import random
+# from keras import keras.layer
 #
 # class LSTM(DataExtraction):
 #     def __init__(self):
