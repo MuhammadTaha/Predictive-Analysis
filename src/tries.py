@@ -132,13 +132,13 @@ def main():
     #
     # linear_regression(train_new=False)
     print("hello world")
-
-    AbstractData.next_train_batch(AbstractData,forecaster = "linear regressor" , batch_size= 10)
+    abData = AbstractData(epoch = 2)
+    # AbstractData.next_train_batch(AbstractData,store_id = [1,3,5],forecaster = "linear regressor" , batch_size= 10)
     print("second time")
     # AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
 
-    AbstractData.validation_batches(AbstractData,forecaster = "linear regressor")
-
+    # AbstractData.validation_batches(AbstractData,forecaster = "linear regressor")
+    # LSTM.forecastor(LSTM)
     #feedforwardnn(train_new=True)
     #naive_classifier()
     # try_model_wo_sess(NaiveForecaster2)

@@ -3,4 +3,4 @@ from .linear_regression import *
 from .feed_forward import *
 from .feed_forward_nn import *
 from .naive_forecaster import *
-from .lstm import *
+from .lstm_forecaster import *

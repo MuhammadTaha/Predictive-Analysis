@@ -8,16 +8,60 @@ import datetime
 import random
 
 
-class AbstractData(DataExtraction):
+class AbstractData():
 
     dataExtract = DataExtraction()
     df = dataExtract.train
     df['is_used'] = 0
 
-    # def __init__(self):
-    #     # global
+    def __init__(self,epoch = 1,store_id = None):
 
-    def next_train_batch(self, store_id = None, forecaster= "linear regressor", batch_size=50,start_date = "2015-07-01",end_date="2015-08-01"):
+        stores_data = list()
+        epoch_data = list()
+
+        if store_id is None:
+            store_id = self.df["Store"].unique()
+
+        for x in range(epoch):
+            for item in store_id:
+                stores_data = AbstractData.next_train_batch(self,store_id = item,forecaster = "linear regressor" , batch_size= 50)
+                print(len(stores_data))
+            epoch_data.append(stores_data)
+            self.df['is_used'] = 0
+
+
+        print(epoch_data)
+
+        print(len(epoch_data))
+
+    # init(store_ids):
+    # set the possible store ids so that we can train with subsets of the data (otherwise it takes too long)
+    # generate all training batches and save them in a list, the list keys are the batch_ids
+    # test_train_split(train_batch_ids, test_batch_ids) set self.train_batch_ids, self.test_batch_ids
+    # The actual splits will be done from somewhere else, from the model selection process
+
+    # next_train_batch:
+    # select one number of self.train_batch_ids - self.train_batches_used_this_epoch (assuming both are sets, then - does SetA \ SetB )
+    # save the chosen batch_id to the set of batch_ids that have been used in the current epoch
+    # check if all batches have been used in the current epoch, and start a new epoch if that's the case
+    # New epoch means: increase self.epochs by one and set self.train_batches_used_this_epoch = set()
+
+
+    # each batch shall have data of one single store
+    # a list of different batch of data of different store
+    # each batch shall contain just the row ids of the data
+
+
+
+
+
+
+    # def __init__(self):
+
+
+
+
+    def next_train_batch(self, store_id = None, forecaster= "linear regressor", batch_size=50,start_date = "2013-01-01",end_date="2015-08-01"):#end_date="2015-08-01"):
         """
         :param forecastor: Type of forecastor for batch selection
         :param batch_size: Number of rows, ignored if self.is_time_series is True
@@ -36,26 +80,41 @@ class AbstractData(DataExtraction):
         #     feature_constants = json.load(f)
             # print(feature_constants)
 
+        batches = list()
 
         df = self.df
         if store_id is None:
             stores = df["Store"].unique()
             store_id = random.choice(stores)
 
-        result_date = self.random_dates(self,start_date,end_date,1)
 
+        result_date = self.random_dates(start_date,end_date,1)
+        # print(result_date)
+        # mask = (df['Date'] >= "2013-01-01") & (df['Date'] <= end_date)
         mask = (df['Date'] >= result_date) & (df['Date'] <= end_date)
+
         df = df.loc[mask]
-        result  =  df[(((df["Store"]) == store_id) & (df["Sales"] != 0) & (df["Customers"] != 0) & (df["is_used"] == 0))].iloc[:batch_size]
-        result['is_used'] = 1
-        self.df.update(result)
+        isFinished = False
+        while(isFinished is False):
+        # for x in range(2):
+            if np.isscalar(store_id) is False:
+                result  =  df[(((df["Store"]).isin(store_id)) & (df["Sales"] != 0) & (df["Customers"] != 0) & (df["is_used"] == 0 | df["is_used"] == 0.0 ))].iloc[:batch_size]
+            else:
+                result  =  df[(((df["Store"])== store_id) & (df["Sales"] != 0) & (df["Customers"] != 0) & ((df["is_used"] == 0) | (df["is_used"] == 0.0 )))].iloc[:batch_size]
 
-        # print(result)
-        x = (batch_size,result.values)
-        y= (batch_size,store_id)
+            if(len(result) > 0):
+                result['is_used'] = 1
+                df.update(result)
+                self.df.update(result)
+                batches.append(result.index.values)
 
-        return x,y
+            else:
+                isFinished = True
 
+        # print(result.index.values)
+        # print(batches)
+
+        return batches
 
     def validation_batches(self,forecaster = "linear regressor"):
         # result = df[df["Store"] == store_id].iloc[:batch_size]
@@ -72,10 +131,9 @@ class AbstractData(DataExtraction):
     def random_dates(self,start_date, end_date, n, unit='D', seed=None):
         #n is the number of dates you want in output
 
-        ndays = self.days_between(self,start_date, end_date)
+        ndays = self.days_between(start_date, end_date)
         arr_ndays = list(range(ndays))
         diff = random.choice(arr_ndays)
-        # print(diff)
         res_result = pd.to_datetime(start_date) + pd.DateOffset(days=np.int(diff))
         orig_date = str(res_result)
 
@@ -83,7 +141,7 @@ class AbstractData(DataExtraction):
         d = d.strftime('%Y-%m-%d')
         return d
 
-        # return
         # return datetime.date.start_date + datetime.date(days = np.float(diff))
 
-
+    def reset_dataset(self):
+        self.df['is_used'] = 0
