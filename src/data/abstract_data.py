@@ -10,29 +10,33 @@ import random
 
 class AbstractData():
 
+
     dataExtract = DataExtraction()
     df = dataExtract.train
     df['is_used'] = 0
 
-    def __init__(self,epoch = 1,store_id = None):
+    train_data = list()
 
-        stores_data = list()
-        epoch_data = list()
+    # def __init__(self,epoch = 1,store_id = None):
+    #
+    #     stores_data = list()
+    #     epoch_data = list()
+    #
+    #     if store_id is None:
+    #         store_id = self.df["Store"].unique()
+    #
+    #     for x in range(epoch):
+    #         for item in store_id:
+    #             stores_data = AbstractData.next_train_batch(self,store_id = item,forecaster = "linear regressor" , batch_size= 50)
+    #             print(len(stores_data))
+    #         epoch_data.append(stores_data)
+    #         self.df['is_used'] = 0
+    #
+    #
+    #     print(epoch_data)
+    #
+    #     print(len(epoch_data))
 
-        if store_id is None:
-            store_id = self.df["Store"].unique()
-
-        for x in range(epoch):
-            for item in store_id:
-                stores_data = AbstractData.next_train_batch(self,store_id = item,forecaster = "linear regressor" , batch_size= 50)
-                print(len(stores_data))
-            epoch_data.append(stores_data)
-            self.df['is_used'] = 0
-
-
-        print(epoch_data)
-
-        print(len(epoch_data))
 
     # init(store_ids):
     # set the possible store ids so that we can train with subsets of the data (otherwise it takes too long)
@@ -59,6 +63,26 @@ class AbstractData():
     # def __init__(self):
 
 
+    def get_training_data(self,epoch = 1,store_id = None):
+        stores_data = list()
+        epoch_data = list()
+
+        if store_id is None:
+            store_id = self.df["Store"].unique()
+
+        for x in range(epoch):
+            for item in store_id:
+                stores_data = AbstractData.next_train_batch(self, store_id=item, forecaster="linear regressor",
+                                                            batch_size=50)
+                print(len(stores_data))
+            epoch_data.append(stores_data)
+            self.df['is_used'] = 0
+
+        print(epoch_data)
+
+        print(len(epoch_data))
+
+        return epoch_data
 
 
     def next_train_batch(self, store_id = None, forecaster= "linear regressor", batch_size=50,start_date = "2013-01-01",end_date="2015-08-01"):#end_date="2015-08-01"):

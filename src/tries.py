@@ -111,6 +111,7 @@ def try_model_wo_sess(model_type, plot_dir=None):
     if plot_dir is not None:
         plot_dir = src_dir + "/../plots/{}".format(model_type.__name__)
 
+
     data = Data(toy=True)
     model = model_type()
 
@@ -132,13 +133,16 @@ def main():
     #
     # linear_regression(train_new=False)
     print("hello world")
-    abData = AbstractData(epoch = 2)
-    # AbstractData.next_train_batch(AbstractData,store_id = [1,3,5],forecaster = "linear regressor" , batch_size= 10)
+    abData  = AbstractData()
+
+    print(abData.get_training_data(epoch = 2,store_id = [23]))
+
+    # AbstractData.next_train_batch(AbstractData,store_id = [1],forecaster = "linear regressor" , batch_size= 10)
     print("second time")
     # AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
 
     # AbstractData.validation_batches(AbstractData,forecaster = "linear regressor")
-    # LSTM.forecastor(LSTM)
+    # LSTMForecaster.forecastor(LSTMForecaster)
     #feedforwardnn(train_new=True)
     #naive_classifier()
     # try_model_wo_sess(NaiveForecaster2)
