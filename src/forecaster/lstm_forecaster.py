@@ -25,17 +25,13 @@
 # from src.data import abstract_data
 #
 
-
-
-
+#
 # import numpy as np
 #
 # from keras.models import Sequential
 # from keras.layers import Dense
 # from keras.layers import LSTM
-# from data
-#
-#
+# # from Predictive-Analysis.src.data import
 # #
 # class LSTMForecaster:
 #     def forecastor(self):
@@ -87,10 +83,10 @@
 #         model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['accuracy'])
 #
 #         model.fit(abData.get_training_data(epoch = 2,store_id = [23])
-# ,
+#
 #                   # batch_size=batch_size,
 #                   epochs=epochs_number)
-        # score, acc = model.evaluate(x_test, y_test,
-        #                             batch_size=batch_size)
-        # print('Test score:', score)
-        # print('Test accuracy:', acc)
+#         # score, acc = model.evaluate(x_test, y_test,
+#         #                             batch_size=batch_size)
+#         # print('Test score:', score)
+#         # print('Test accuracy:', acc)

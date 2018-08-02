@@ -6,6 +6,7 @@ import pdb
 import tensorflow as tf
 from forecaster import *
 from data import *
+from data.lstm_forecaster import LSTMForecaster
 
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -132,9 +133,9 @@ def main():
     #  time_series_example()
     #
     # linear_regression(train_new=False)
-    print("hello world")
+    # print("hello world")
     abData  = AbstractData()
-
+    #
     print(abData.get_training_data(epoch = 2,store_id = [23]))
 
     # AbstractData.next_train_batch(AbstractData,store_id = [1],forecaster = "linear regressor" , batch_size= 10)
@@ -142,7 +143,7 @@ def main():
     # AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
 
     # AbstractData.validation_batches(AbstractData,forecaster = "linear regressor")
-    # LSTMForecaster.forecastor(LSTMForecaster)
+    LSTMForecaster.forecastor(LSTMForecaster)
     #feedforwardnn(train_new=True)
     #naive_classifier()
     # try_model_wo_sess(NaiveForecaster2)

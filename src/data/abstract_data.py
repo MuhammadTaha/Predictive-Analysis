@@ -11,6 +11,7 @@ import random
 class AbstractData():
 
 
+
     dataExtract = DataExtraction()
     df = dataExtract.train
     df['is_used'] = 0
@@ -74,13 +75,13 @@ class AbstractData():
             for item in store_id:
                 stores_data = AbstractData.next_train_batch(self, store_id=item, forecaster="linear regressor",
                                                             batch_size=50)
-                print(len(stores_data))
+                # print(len(stores_data))
             epoch_data.append(stores_data)
             self.df['is_used'] = 0
 
-        print(epoch_data)
-
-        print(len(epoch_data))
+        # print(epoch_data)
+        #
+        # print(len(epoch_data))
 
         return epoch_data
 
@@ -130,7 +131,13 @@ class AbstractData():
                 result['is_used'] = 1
                 df.update(result)
                 self.df.update(result)
-                batches.append(result.index.values)
+
+                # for row_id in result.index.values:
+                # print(self.dataExtract._extract_rows(result.index.values))
+
+                # print(result.index.values)
+                # batches.append(result.index.values)
+                batches.append(self.dataExtract._extract_rows(result.index.values))
 
             else:
                 isFinished = True
@@ -169,3 +176,8 @@ class AbstractData():
 
     def reset_dataset(self):
         self.df['is_used'] = 0
+
+
+
+    # def get_test_data(self):
+

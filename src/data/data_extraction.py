@@ -138,7 +138,7 @@ class DataExtraction():
 
         row = self.train.iloc[row_id]
         store_id = row["Store"]
-        store = self.store.iloc[store_id - 1]
+        store = self.store.iloc[int(store_id - 1)]
 
         curr_date = self.str_to_date(row["Date"])
 
@@ -148,8 +148,7 @@ class DataExtraction():
         competition_open = self._competition_open(store, curr_date)
         promo_since_days = self._promo_since_days(store, curr_date)
         days_since_interval = self._promo_interval_since_days(store, curr_date) if promo_since_days > 0 else -1
-
-        day_of_week = np.eye(7)[row["DayOfWeek"] - 1]
+        day_of_week = np.eye(7)[int(row["DayOfWeek"] - 1)]
         open = row["Open"]
         promo = row["Promo"]
         state_holiday = row["StateHoliday"]
