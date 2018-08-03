@@ -22,7 +22,7 @@ DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
 
 
 class DataExtraction:
-    def __init__(self, dir="data", p_train=0.6, p_val=0.2, p_test=0.2, toy=False, keep_zero_sales=False):
+    def __init__(self, dir=DATA_DIR, p_train=0.6, p_val=0.2, p_test=0.2, toy=False, keep_zero_sales=False):
         """
         :param dir: location of data.zip
         :param p_train: percentage of the labeled data used for training
