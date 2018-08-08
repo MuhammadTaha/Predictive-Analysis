@@ -134,6 +134,7 @@ def try_model_wo_sess(model_type, plot_dir=None):
 
 
 def main():
+    d = Data()
     #  choose the methods to try here
     #  time_series_example()
     #  howmanyfeatures()

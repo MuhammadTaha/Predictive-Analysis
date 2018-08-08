@@ -22,54 +22,45 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data"
 DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
 
 class DataExtraction:
-    def __init__(self, dir=DATA_DIR, p_train=0.6, p_val=0.2, p_test=0.2, toy=False, keep_zero_sales=False):
+    def __init__(self, data_dir=DATA_DIR, toy=False, keep_zero_sales=False):
         """
-        :param dir: location of data.zip
-        :param p_train: percentage of the labeled data used for training
-        :param p_val: percentage of the labeled data used for validation
-        :param p_test: percentage of the labeled data used for testing
+        :param data_dir: location of data.zip
         :param toy: if True, take only data of the first 10 stores for model development
 
         Extracts the data and saves the row_ids for train, val and test data
         Features will be extracted when a certain row is requested in order to save memory
         """
-        assert p_train + p_val + p_test == 1
-        self.p_train, self.p_val, self.p_test = p_train, p_val, p_test
 
-        self.data_dir = dir
+        self.data_dir = data_dir
 
         # check if files are extracted
-        if set(os.listdir(dir)) >= set(["sample_submission.csv", "store.csv", "test.csv", "train.csv"]):
-            print("Data is extracted already")
-        else:
-            DataExtraction.extract(dir + "/data.zip", dir)
+        if not set(os.listdir(data_dir)) >= set(["sample_submission.csv", "store.csv", "test.csv", "train.csv"]):
+            print("unzip data.zip")
+            DataExtraction.extract(data_dir + "/data.zip", data_dir)
 
         # load into pandas
-        self.store = pd.read_csv(dir + "/store.csv")
-        self.final_test = pd.read_csv(dir + "/test.csv")
-        self.train = pd.read_csv(dir + "/train.csv")
+        self.store = pd.read_csv(data_dir + "/store.csv")
+        self.final_test = pd.read_csv(data_dir + "/test.csv")
+        self.train = pd.read_csv(data_dir + "/train.csv")
 
         if toy:
             self.train = self.train.loc[self.train.Store < 3]
 
         # clean stores with no sales and closed
+<<<<<<< HEAD
         if not keep_zero_sales:
             self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
         # sort sales from old to new
+=======
+        #if not keep_zero_sales:
+        #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
+>>>>>>> b17ca68767e06de0b4c9bd18e85bf8af9f6e8d20
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
         self.date_keys = sorted(self.train.Date.unique())
 
-        self.epochs = 0
-        self.is_new_epoch = True
-
         self.features_count = len(self._extract_row(1))
-
-    def _new_epoch(self):
-        self.used_this_epoch = set()
-        self.epochs += 1
-        self.is_new_epoch = True
 
     def _extract_label(self, row_id):
         #  extracts the sales from the specified row
@@ -78,7 +69,13 @@ class DataExtraction:
     def _extract_rows(self, row_ids):
         X = np.array([self._extract_row(i) for i in row_ids])
         y = np.array([self._extract_label(i) for i in row_ids])
-        return X, y
+
+    def extract_rows_and_days(self, row_ids):
+        X = np.array([self._extract_row(i) for i in row_ids])
+        y = np.array([self._extract_label(i) for i in row_ids])
+        start_date = self.str_to_date(self.train.iloc[-1].Date)
+        days = np.array([(self.str_to_date(self.train.iloc[row_id].Date) - start_date).days for row_id in row_ids])
+        return days, X, y
 
     def _extract_row(self, row_id):
         """
@@ -130,7 +127,11 @@ class DataExtraction:
             StateHoliday                {0, 'b', 'a', '0', 'c'} => one hot 4
             SchoolHoliday	            {0,1}
         """
-        row = self.train.iloc[row_id]
+        try:
+            row = self.train.iloc[row_id]
+        except:
+            print(row_id)
+            pdb.set_trace()
         return self._extract_loaded_row(row)
 
     def _extract_loaded_row(self, row):
@@ -178,7 +179,6 @@ class DataExtraction:
 
     def str_to_date(self, date_str):
         return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
-
 
     def _weekday_store_avg(self, row):
         if row["Open"] == 0: return 0

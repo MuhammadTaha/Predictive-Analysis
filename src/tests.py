@@ -14,7 +14,7 @@ except ModuleNotFoundError:
     from forecaster.linear_regression import LinearRegressor
     from forecaster.feed_forward_nn import FeedForwardNN1
     from forecaster.naive_forecaster import NaiveForecaster, NaiveForecaster2
-    from data.feedforward_data import Data
+    from data import *
     from visualize_predictions import visualize_predictions_quick
 
 import tensorflow as tf
@@ -80,7 +80,7 @@ class TestLoadTrainedModel(unittest.TestCase):
 
 class TestData(unittest.TestCase):
     def test_random_batches(self):
-        data = Data(p_train=0.1, p_val=0.45, p_test=0.45)
+        data = Data()
 
         samples = 0
         while data.epochs <3: # :)
@@ -89,4 +89,3 @@ class TestData(unittest.TestCase):
             self.assertEqual(X.shape[1], data.features_count)
             samples += X.shape[0]
 
-        self.assertEqual(samples-len(data.used_this_epoch), 3*len(data.train_row_ids))
