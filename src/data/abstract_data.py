@@ -6,6 +6,7 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import random
+import math
 
 
 class AbstractData():
@@ -17,6 +18,8 @@ class AbstractData():
     df['is_used'] = 0
 
     train_data = list()
+
+    BATCH_SIZE = 50
 
     # def __init__(self,epoch = 1,store_id = None):
     #
@@ -57,36 +60,47 @@ class AbstractData():
     # each batch shall contain just the row ids of the data
 
 
-
-
-
-
-    # def __init__(self):
-
-
-    def get_training_data(self,epoch = 1,store_id = None):
+    def get_training_data(self,store_id = None):
         stores_data = list()
-        epoch_data = list()
 
         if store_id is None:
             store_id = self.df["Store"].unique()
 
-        for x in range(epoch):
-            for item in store_id:
-                stores_data = AbstractData.next_train_batch(self, store_id=item, forecaster="linear regressor",
-                                                            batch_size=50)
-                # print(len(stores_data))
-            epoch_data.append(stores_data)
-            self.df['is_used'] = 0
+        # for x in range(epoch):
+        for item in store_id:
+            stores_data = AbstractData.next_train_batch(self, store_id=item, forecaster="linear regressor",batch_size = self.BATCH_SIZE)
+            # print(len(stores_data))
+            # epoch_data.append(stores_data)
+        self.reset_dataset()
+        # self.df['is_used'] = 0
 
-        # print(epoch_data)
+
+        print(np.shape(stores_data))
+        # print(stores_data)
+
+
+        train_data_size  = math.ceil(int((len(stores_data) * 2) / 3))
+        test_data_size =  len(stores_data) - train_data_size
+
+
+        train_data = stores_data[:train_data_size]
+        test_data = stores_data[-test_data_size:]
+
+        # print(len(stores_data))
+        # print(train_data_size)
+        # print(test_data_size)
+        #
+        #
+        # print(len(train_data))
+        # print(len(test_data))
         #
         # print(len(epoch_data))
 
-        return epoch_data
+        return train_data,test_data
+        # return stores_data
 
 
-    def next_train_batch(self, store_id = None, forecaster= "linear regressor", batch_size=50,start_date = "2013-01-01",end_date="2015-08-01"):#end_date="2015-08-01"):
+    def next_train_batch(self, store_id = None, forecaster= "linear regressor", batch_size= BATCH_SIZE,start_date = "2013-01-01",end_date="2015-08-01"):#end_date="2015-08-01"):
         """
         :param forecastor: Type of forecastor for batch selection
         :param batch_size: Number of rows, ignored if self.is_time_series is True

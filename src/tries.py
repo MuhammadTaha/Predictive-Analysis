@@ -136,15 +136,17 @@ def main():
     # print("hello world")
     abData  = AbstractData()
     #
-    print(abData.get_training_data(epoch = 2,store_id = [23]))
-
+    train_data,test_data = abData.get_training_data(store_id = [23])
+    print("train data")
+    print(train_data)
+    print("test data")
+    print(test_data)
     # AbstractData.next_train_batch(AbstractData,store_id = [1],forecaster = "linear regressor" , batch_size= 10)
-    print("second time")
-    # AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
-
-    # AbstractData.validation_batches(AbstractData,forecaster = "linear regressor")
-    LSTMForecaster.forecastor(LSTMForecaster)
-    #feedforwardnn(train_new=True)
-    #naive_classifier()
-    # try_model_wo_sess(NaiveForecaster2)
+    #     # AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
+    #
+    #     # AbstractData.validation_batches(AbstractData,forecaster = "linear regressor")
+    #     # LSTMForecaster.forecastor(LSTMForecaster)
+    #     #feedforwardnn(train_new=True)
+    #     #naive_classifier()
+    #     # try_model_wo_sess(NaiveForecaster2)
 

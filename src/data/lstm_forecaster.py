@@ -91,7 +91,7 @@ class LSTMForecaster:
                   epochs=epochs_number)
 
 
-
+        
 
 
         score, acc = model.evaluate(x_test, y_test,
