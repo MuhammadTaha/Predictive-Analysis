@@ -7,6 +7,11 @@ except:
 
 
 class FeedForwardNN1(FeedForward):
+    params_grid = {
+        'hidden_features': [[100], [100, 100]],
+        'predict_logs': [True, False]
+    }
+
     def __init__(self, features_count=27, sess=None, plot_dir=None, batch_size=100, hidden_features=[100], predict_logs=False):
         """
         :param hidden_features: list of how many neurons each hidden layer should have

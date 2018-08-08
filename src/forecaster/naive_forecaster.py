@@ -9,6 +9,8 @@ class NaiveForecaster(AbstractForecaster):
     """
     Return the average of the store on the given weekday
     """
+    params_grid = {}
+
     def __init__(self):
         self.trained = True
 
@@ -30,6 +32,8 @@ class NaiveForecaster2(AbstractForecaster):
     """
     Return the average of the store in the week of the year
     """
+    params_grid = {}
+
     def __init__(self):
         self.trained = True
 

@@ -108,7 +108,7 @@ class AbstractForecaster(ABC):
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        # joblib.dump(self, os.path.join(MODEL_DIR, file_name))
+        joblib.dump(self, os.path.join(MODEL_DIR, file_name))
         return os.path.join(MODEL_DIR, file_name)
 
     @staticmethod

@@ -7,6 +7,8 @@ except:
 
 
 class LinearRegressor(FeedForward):
+    params_grid = {}
+
     def _build(self):
         # placeholders
         self.input = tf.placeholder(dtype=tf.float32, shape=[None, self.features_count])

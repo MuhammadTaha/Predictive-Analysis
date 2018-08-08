@@ -68,14 +68,12 @@ class TestLoadTrainedModel(unittest.TestCase):
 
     def test_xgbmodel(self):
         print("Test trained xgb model")
-        try:
-            data = Data.load_data()
-        except:
-            data = Data()
-            data.save()
+        data = Data()
         forecaster = XGBForecaster.load_model("XGBForecaster2018-07-03-16:01")
         print("Loaded model.")
         print("Score of XGBForecaster2018-07-03-16:01: ", forecaster.score(data))
+
+
 
 
 class TestData(unittest.TestCase):

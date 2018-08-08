@@ -47,14 +47,9 @@ class DataExtraction:
             self.train = self.train.loc[self.train.Store < 3]
 
         # clean stores with no sales and closed
-<<<<<<< HEAD
-        if not keep_zero_sales:
-            self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
-        # sort sales from old to new
-=======
+
         #if not keep_zero_sales:
         #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
->>>>>>> b17ca68767e06de0b4c9bd18e85bf8af9f6e8d20
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
