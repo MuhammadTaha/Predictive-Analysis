@@ -1,4 +1,8 @@
-from .abstract_forecaster import *
+try:
+    from src.forecaster.abstract_forecaster import *
+except ModuleNotFoundError:
+    from .abstract_forecaster import *
+import numpy as np
 
 
 class NaiveForecaster(AbstractForecaster):
@@ -9,7 +13,7 @@ class NaiveForecaster(AbstractForecaster):
         self.trained = True
 
     def _decision_function(self, X):
-        return X[:, FEATURES["weekday_store_avg"], None]*X[:, FEATURES["open"], None]
+        return X[:, WEEKDAY_STORE_AVG, None]*X[:, OPEN, None]
 
     def _train(self, *args, **kwargs):
         return
@@ -30,7 +34,7 @@ class NaiveForecaster2(AbstractForecaster):
         self.trained = True
 
     def _decision_function(self, X):
-        return X[:, FEATURES["week_of_year_avg"], None]*X[:, FEATURES["open"], None]
+        return X[:, WEEK_OF_YEAR_AVG, None]*X[:, OPEN, None]
 
     def _train(self, *args, **kwargs):
         return
