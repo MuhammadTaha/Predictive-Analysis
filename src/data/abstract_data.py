@@ -1,16 +1,13 @@
-from .data_extraction import *
-import pandas as pd
-import zipfile
-import os
-import tensorflow as tf
-import numpy as np
-import datetime
-import random
 
-
+try:
+    from src.data.data_extraction import  DataExtraction
+except ModuleNotFoundError:
+    from .data_extraction import DataExtraction
 
 
 global feature_constants
+
+
 class AbstractData(DataExtraction):
     def __init__(self, *args, **kwargs):
 

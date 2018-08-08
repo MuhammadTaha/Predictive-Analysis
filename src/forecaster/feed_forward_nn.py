@@ -1,15 +1,13 @@
-import pandas as pd
-import zipfile
-import os
 import tensorflow as tf
-import numpy as np
-import datetime
 
-from .feed_forward import *
+try:
+    from src.forecaster.feed_forward import *
+except:
+    from .feed_forward import *
 
 
 class FeedForwardNN1(FeedForward):
-    def __init__(self, features_count=25, sess=None, plot_dir=None, batch_size=100, hidden_features=[100], predict_logs=False):
+    def __init__(self, features_count=27, sess=None, plot_dir=None, batch_size=100, hidden_features=[100], predict_logs=False):
         """
         :param hidden_features: list of how many neurons each hidden layer should have
         :param predict_logs: predict log(y)

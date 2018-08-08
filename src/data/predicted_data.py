@@ -1,11 +1,7 @@
-import pandas as pd
-import zipfile
-import os
-import tensorflow as tf
-import numpy as np
-import datetime
-
-from .timeseries_data import TimeSeriesData
+try:
+    from src.data.timeseries_data import TimeSeriesData
+except ModuleNotFoundError:
+    from .timeseries_data import TimeSeriesData
 
 
 class PredictedTimeseriesData(TimeSeriesData):
