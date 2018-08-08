@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import random
-# from forecaster import AbstractForecaster
+from forecaster import AbstractForecaster
 
 import pdb
 
@@ -17,9 +17,9 @@ import pdb
 - Provides a method to fetch the next train data batch
 - Estimates missing data
 """
+
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
 DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
-
 
 class DataExtraction:
     def __init__(self, dir=DATA_DIR, p_train=0.6, p_val=0.2, p_test=0.2, toy=False, keep_zero_sales=False):
@@ -29,6 +29,7 @@ class DataExtraction:
         :param p_val: percentage of the labeled data used for validation
         :param p_test: percentage of the labeled data used for testing
         :param toy: if True, take only data of the first 10 stores for model development
+
         Extracts the data and saves the row_ids for train, val and test data
         Features will be extracted when a certain row is requested in order to save memory
         """
@@ -55,7 +56,6 @@ class DataExtraction:
         if not keep_zero_sales:
             self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
         # sort sales from old to new
-        self.train = self.train.sort_index(ascending=False)
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
@@ -198,12 +198,14 @@ class DataExtraction:
             date = self.str_to_date(row["Date"])
             dates = []
             for offset in range(-3, 4):
-                mm_dd = (date + datetime.timedelta(days=offset)).isoformat()[5:]  # isoformat is "YYYY-MM-DD"
+                mm_dd = (date +  datetime.timedelta(days = offset)).isoformat()[5:] # isoformat is "YYYY-MM-DD"
+
                 for YYYY in ["2013", "2014", "2015"]:
                     dates.append(YYYY + "-" + mm_dd)
             return dates
 
         dates = get_dates()
+
         avg = np.mean(self.train.loc[(self.train.Store == store_id)
                       & self.train.Date.isin(dates)
                       & (self.train.Open == 1)]["Sales"])

@@ -28,7 +28,7 @@ class Data(DataExtraction):
         self.X_val, self.y_val = self._extract_rows(self.val_row_ids)
 
         # create test data
-        self.X_test, self.y_test = self._extract_rows(self.test_row_ids)
+        # self.X_test, self.y_test = self._extract_rows(self.test_row_ids)
 
     def next_train_batch(self, batch_size=50):
         """
@@ -58,11 +58,3 @@ class Data(DataExtraction):
         :return y: nd.array of shape (batch_size, 1)
         """
         return self.X_test, self.y_test
-
-    def save(self):
-        joblib.dump(self, os.path.join(DATA_DIR, DATA_PICKLE_FILE))
-        return os.path.join(DATA_DIR, DATA_PICKLE_FILE)
-
-    @staticmethod
-    def load_data():
-        return joblib.load(os.path.join(DATA_DIR, DATA_PICKLE_FILE))

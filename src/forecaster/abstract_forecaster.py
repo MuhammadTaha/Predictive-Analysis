@@ -3,13 +3,14 @@ from sklearn.utils.validation import check_X_y, check_array
 from sklearn.externals import joblib
 import os
 import datetime
+from sklearn.model_selection import cross_val_score
+
 import logging
 try:
     from src.data.feature_enum import *
 except ModuleNotFoundError:
     from data.feature_enum import *
 
-#from evaluate import Backtesting
 
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
@@ -103,11 +104,11 @@ class AbstractForecaster(ABC):
         """
             used to get an impression of the performance of the current model.
         """
-        pass
+        return cross_val_score(self, X, y)
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        joblib.dump(self, os.path.join(MODEL_DIR, file_name))
+        # joblib.dump(self, os.path.join(MODEL_DIR, file_name))
         return os.path.join(MODEL_DIR, file_name)
 
     @staticmethod
