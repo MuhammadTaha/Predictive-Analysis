@@ -136,15 +136,17 @@ def main():
     # print("hello world")
     abData  = AbstractData()
     #
+
+    # give the specific store ids for getting data for specific store in array
+    # or leave it empty for getting the entire data set.
+
     train_data,test_data = abData.get_training_data(store_id = [23])
+    # train_data,test_data = abData.get_training_data()
     print("train data")
     print(train_data)
     print("test data")
     print(test_data)
-    # AbstractData.next_train_batch(AbstractData,store_id = [1],forecaster = "linear regressor" , batch_size= 10)
-    #     # AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
-    #
-    #     # AbstractData.validation_batches(AbstractData,forecaster = "linear regressor")
+
     #     # LSTMForecaster.forecastor(LSTMForecaster)
     #     #feedforwardnn(train_new=True)
     #     #naive_classifier()
