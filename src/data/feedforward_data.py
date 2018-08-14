@@ -8,7 +8,7 @@ import random
 from .data_extraction import DataExtraction
 
 
-class Data(DataExtraction):
+class FeedForwardData(DataExtraction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._prepare_random_batches()
