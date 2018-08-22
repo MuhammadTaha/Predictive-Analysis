@@ -2,6 +2,7 @@ from data import Data
 import numpy as np
 import json
 import os
+import random
 try:
     from .forecaster import *
 except:
@@ -13,11 +14,13 @@ RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_
 
 os.makedirs(RESULT_DIR, exist_ok=True)
 
-def estimate_score(model, data):
+data = Data(update_disk=True)
+print("got some data")
+
+def estimate_score(model):
     # use the first 1000 batches only
     batches = np.random.permutation(list(range(1000)))
     data.train_test_split(set(batches[:700]), set(batches[700:]))
-    pdb.set_trace()
 
     model.fit(data)
 
@@ -27,11 +30,42 @@ def estimate_score(model, data):
     return np.mean(score)
 
 
-def test_estimate_score():
-    model = NaiveForecaster()
-    data = Data(update_disk=True)
-    print("Got some data")
-    print("Score: ", estimate_score(model, data))
+def best_hyperparams_and_score(model_class, num_combinations=10):
+    """
+    Creates a <model_class.__name__>-hyperparameters.json :
+    [ {"params": <params>, "score": <score>}, ...]
+    """
+    params_choices  = model_class.params_grid
+
+    # try different combinations
+    # this is a random search in the paramater space, inspired by
+    # http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
+    # I don't use that one because I'm not sure if it can be used with our batch trained models
+    def random_choice(key):
+        if isinstance(params_choices[key], list):
+            return random.choice(params_choices[key])
+        assert isinstance(params_choices[key], np.ndarray), "{} has for param of unknown type for {}".format(model_class.__name__, key)
+        return np.random.choice(params_choices[key])
+
+    result, best_params, best_score, tried = [], None, np.INF, []
+    for i in range(num_combinations):
+        while params is not None and not params in tried:
+            params = {key: random_choice(key) for key in params_choices.keys()}
+        print("{} : try {}".format(model_class.__name__, params))
+        model = model_class(**params)
+        score = estimate_score(model)
+        result.append({"params": params, "score": score})
+        if score < best_score:
+            best_params, best_score = params, score
+
+    result_path = os.path.join(RESULT_DIR, "{}-hyperparameters.json".format(model_class.__name__))
+    #  save the results
+    with open(result_path, "w") as f:
+        result = json.dumps(result)
+        print("result to be dumped", result)
+        f.write(result)
+
+    return best_params, best_score
 
 
 def model_selection():
@@ -48,17 +82,32 @@ def model_selection():
     except FileNotFoundError:
         result = {} # here the json results will be collected
 
+    def save_results():
+        with open(result_path, "w") as f:
+            result = json.dumps(result)
+            print("result to be dumped", result)
+            f.write(result)
+
     for model_class in MODELS:
         if model_class in result.keys(): continue
         params, score = best_hyperparams_and_score(model_class)
         result[model_class.__name__] = {"hyper_parameters": params, "score": score}
+        save_results()
+        #
+        # If we have an ExpertGroup model that trains one type of model per store
+        # we only need to create the expert group for the model with the best
+        # hyper parameters, so this is a good place to do it. We also need a way to
+        # save the expert group into results and make it json dumpable and readable
+        #
 
-    #  save the results
-    with open(result_path, "w") as f:
-        result = json.dumps(result)
-        print("result to be dumped", result)     
-        f.write(result)
-
+    # initialize the best model
+    best_score = max([class_result["score"] for class_result in result.values()])
+    best_class, best_params = [(class_name, result[class_name] )
+                                for class_name in result.keys()
+                                if result[class_name]["score"] == best_score][0]
+    model_class = [model_class for model_class in MODELS if model_class.__name__==best_class][0]
+    model = model_class(**best_params)
+    return model
 
 
 def train_best_model():
