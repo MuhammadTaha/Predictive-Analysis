@@ -22,7 +22,15 @@ def estimate_score(model):
     batches = np.random.permutation(list(range(1000)))
     data.train_test_split(set(batches[:700]), set(batches[700:]))
 
+    if hasattr(model, "sess"):
+        sess = tf.Session()
+        model.sess = sess
+        sess.run(tf.global_variables_initializer())
+
     model.fit(data)
+
+    if hasattr(model, "sess"):
+        sess.close()
 
     score = []
     for batch_id in data.test_batch_ids:
