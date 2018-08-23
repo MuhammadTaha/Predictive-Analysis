@@ -96,7 +96,7 @@ class FeedForward(AbstractForecaster):
         train_step = 0
 
         while early_stopping(train_step, val_losses, data.epochs): # no improvement in the last 10 epochs
-            X, y = data.next_train_batch(self.batch_size)
+            X, y = data.next_train_batch()
             train_loss, _ = self.sess.run([self.loss, self.train_step],
                                     feed_dict={self.input: X, self.true_sales: y})
             #  logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))

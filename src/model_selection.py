@@ -19,8 +19,8 @@ print("got some data")
 
 def estimate_score(model):
     # use the first 1000 batches only
-    batches = np.random.permutation(list(range(1000)))
-    data.train_test_split(set(batches[:700]), set(batches[700:]))
+    batches = np.random.permutation(list(range(100)))
+    data.train_test_split(set(batches[:70]), set(batches[70:]))
 
     if hasattr(model, "sess"):
         sess = tf.Session()
@@ -34,11 +34,11 @@ def estimate_score(model):
 
     score = []
     for batch_id in data.test_batch_ids:
-        score.append(model.score(data.batch_X[batch_id], data.batch_y[batch_id]))
+        score.append(model.score(data.batches_X[batch_id], data.batches_y[batch_id]))
     return np.mean(score)
 
 
-def best_hyperparams_and_score(model_class, num_combinations=10):
+def best_hyperparams_and_score(model_class, num_combinations=2):
     """
     Creates a <model_class.__name__>-hyperparameters.json :
     [ {"params": <params>, "score": <score>}, ...]
@@ -55,15 +55,17 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
         assert isinstance(params_choices[key], np.ndarray), "{} has for param of unknown type for {}".format(model_class.__name__, key)
         return np.random.choice(params_choices[key])
 
-    result, best_params, best_score, tried = [], None, np.inf, []
-    for i in range(num_combinations):
-        while params is not None and not params in tried:
+    result, best_params, best_score, tried = [], {}, np.inf, []
+    all_combinations = max(1, int(np.prod([len(params_choices[key]) for key in params_choices.keys()])))
+    for i in range(min(num_combinations, all_combinations)):
+        params = {key: random_choice(key) for key in params_choices.keys()}
+        while params in tried:
             params = {key: random_choice(key) for key in params_choices.keys()}
         print("{} : try {}".format(model_class.__name__, params))
         model = model_class(**params)
         score = estimate_score(model)
         result.append({"params": params, "score": score})
-        if score < best_score:
+        if score <= best_score:
             best_params, best_score = params, score
 
     result_path = os.path.join(RESULT_DIR, "{}-hyperparameters.json".format(model_class.__name__))
@@ -76,7 +78,7 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
     return best_params, best_score
 
 
-def model_selection():
+def model_selection(extend_existing_results=False):
     """
     Find the best model, their hyperparameters and estiamted score
     generate a model_score.json that looks like this:
@@ -85,22 +87,23 @@ def model_selection():
     """
     result_path = os.path.join(RESULT_DIR, 'model_selection.json')
     try: # load old results and don't run modelselection for them again
+        assert extend_existing_results
         with open(result_path, "r") as f:
             result = json.load(f)
-    except FileNotFoundError:
-        result = {} # here the json results will be collected
+    except (FileNotFoundError, AssertionError):
+        result = {}  # here the json results will be collected
 
-    def save_results():
+    def save_results(_result):
         with open(result_path, "w") as f:
-            result = json.dumps(result)
-            print("result to be dumped", result)
-            f.write(result)
+            json_result = json.dumps(_result)
+            print("result to be dumped", json_result)
+            f.write(json_result)
 
     for model_class in MODELS:
         if model_class in result.keys(): continue
         params, score = best_hyperparams_and_score(model_class)
         result[model_class.__name__] = {"hyper_parameters": params, "score": score}
-        save_results()
+        save_results(result)
         #
         # If we have an ExpertGroup model that trains one type of model per store
         # we only need to create the expert group for the model with the best

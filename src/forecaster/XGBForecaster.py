@@ -11,6 +11,7 @@ except ModuleNotFoundError:
 
 EPS = 0.1
 
+
 class XGBForecaster(AbstractForecaster):
     params_grid = {
         'learning_rate': np.random.uniform(0.01, 0.3, 2),
@@ -31,21 +32,21 @@ class XGBForecaster(AbstractForecaster):
     early_stopping_rounds = 50
 
     def __init__(self, **kwargs):
-        if 'params' in kwargs:
-            self.params = kwargs['params']
-        else:
-            self.params = None
+        self.params = kwargs
+        assert set(self.params.keys()) == set(self.__class__.params_grid.keys()), \
+            "XGBForecaster: not all params set: {}".format(set(self.__class__.params_grid.keys())- \
+                                                           set(self.params.keys()) )
 
     def _build(self):
         pass
 
     def _train(self, data):
-        batch_size = 500
-        X, y = data.next_train_batch(batch_size)
+        # batch_size = 500
+        # X, y = data.next_train_batch(batch_size)
+        X, y = data.all_train_data()
         if self.params is None:
-            self.params = self._search_hyper_params(X, y)
+            self.params = self._search_hyper_params(X[:500], y[:500])
 
-        X, y = data.next_train_batch(batch_size * 10)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=7)
         dtrain = xgb.DMatrix(X_train, y_train)
         dtest = xgb.DMatrix(X_test, y_test)
@@ -56,8 +57,7 @@ class XGBForecaster(AbstractForecaster):
     def _decision_function(self, X):
         return self.model.predict(xgb.DMatrix(X))
 
-    def score(self, data):
-        X, y = data.X_test, data.y_test
+    def score(self, X, y):
         predictions = self._decision_function(X)
         error = self.rmspe(y, predictions)
         print("Validation score: {:.4f}".format(error))
@@ -72,7 +72,7 @@ class XGBForecaster(AbstractForecaster):
 
     @staticmethod
     def rmspe(y, yhat):
-        return np.sqrt(np.mean((yhat / y - 1) ** 2 + EPS))
+        return np.sqrt(np.mean((yhat / (y + EPS) - 1) ** 2))
 
     @staticmethod
     def rmspe_xg(yhat, y):

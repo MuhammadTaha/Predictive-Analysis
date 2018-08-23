@@ -104,7 +104,6 @@ class Data():
 
     def all_test_data(self):
         batches = list(self.test_batch_ids)
-        pdb.set_trace()
         return np.concatenate(self.batches_X[batches], axis=0), np.concatenate(self.batches_y[batches], axis=0)
 
     def save(self, path):
@@ -128,7 +127,7 @@ class Data():
         self.new_epoch()
         self.X_val, self.y_val = self.all_test_data()
 
-    def next_batch(self):
+    def next_train_batch(self):
         if self.train_batch_ids - self.used_this_epoch == set():
             self.new_epoch
         batch_id = (self.train_batch_ids - self.used_this_epoch).choice()
