@@ -4,6 +4,7 @@ except ModuleNotFoundError:
     from .data_extraction import *
 import numpy as np
 import os
+import random
 
 import pdb
 
@@ -26,6 +27,7 @@ class Data():
         self.used_this_epoch = set()
         self.train_batch_ids = set()
         self.test_batch_ids = set()
+        self.is_new_epoch = None
 
     def cached_batches_of(self, store_id):
         cached_dir = os.path.join(DATA_DIR, "extracted")
@@ -120,6 +122,8 @@ class Data():
     def new_epoch(self):
         self.epochs += 1
         self.used_this_epoch = set()
+        self.is_new_epoch = True
+        print("START EPOCH", self.epochs)
 
     def train_test_split(self, train_batch_ids, test_batch_ids):
         assert len(train_batch_ids.intersection(test_batch_ids)) == 0
@@ -128,8 +132,9 @@ class Data():
         self.X_val, self.y_val = self.all_test_data()
 
     def next_train_batch(self):
+        self.is_new_epoch = False
         if self.train_batch_ids - self.used_this_epoch == set():
-            self.new_epoch
-        batch_id = (self.train_batch_ids - self.used_this_epoch).choice()
+            self.new_epoch()
+        batch_id = random.choice(list(self.train_batch_ids - self.used_this_epoch))
         self.used_this_epoch.add(batch_id)
         return self.batches_X[batch_id], self.batches_y[batch_id]

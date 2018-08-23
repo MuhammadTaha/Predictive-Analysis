@@ -78,7 +78,7 @@ def best_hyperparams_and_score(model_class, num_combinations=2):
     return best_params, best_score
 
 
-def model_selection(extend_existing_results=False):
+def model_selection(extend_existing_results=True):
     """
     Find the best model, their hyperparameters and estiamted score
     generate a model_score.json that looks like this:
@@ -90,7 +90,9 @@ def model_selection(extend_existing_results=False):
         assert extend_existing_results
         with open(result_path, "r") as f:
             result = json.load(f)
-    except (FileNotFoundError, AssertionError):
+        print("Extend the following existing results of previous run: ", result)
+    except (FileNotFoundError, AssertionError) as e:
+        print("Full model selection because: ", type(e), e)
         result = {}  # here the json results will be collected
 
     def save_results(_result):
@@ -100,7 +102,7 @@ def model_selection(extend_existing_results=False):
             f.write(json_result)
 
     for model_class in MODELS:
-        if model_class in result.keys(): continue
+        if model_class.__name__ in result.keys(): continue
         params, score = best_hyperparams_and_score(model_class)
         result[model_class.__name__] = {"hyper_parameters": params, "score": score}
         save_results(result)
