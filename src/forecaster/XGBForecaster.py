@@ -72,7 +72,7 @@ class XGBForecaster(AbstractForecaster):
 
     @staticmethod
     def rmspe(y, yhat):
-        return np.sqrt(np.mean((yhat / (y + EPS) - 1) ** 2))
+        return np.sqrt(np.mean((yhat - y + EPS) / (y + EPS)) ** 2)
 
     @staticmethod
     def rmspe_xg(yhat, y):

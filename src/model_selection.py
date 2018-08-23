@@ -29,13 +29,14 @@ def estimate_score(model):
 
     model.fit(data)
 
-    if hasattr(model, "sess"):
-        sess.close()
-
     score = []
     for batch_id in data.test_batch_ids:
         score.append(model.score(data.batches_X[batch_id], data.batches_y[batch_id]))
-    return np.mean(score)
+
+    if hasattr(model, "sess"):
+        sess.close()
+
+    return float(np.mean(score))
 
 
 def best_hyperparams_and_score(model_class, num_combinations=2):

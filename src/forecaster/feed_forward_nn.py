@@ -9,7 +9,7 @@ except:
 class FeedForwardNN1(FeedForward):
     params_grid = {
         'hidden_features': [[100], [100, 100]],
-        'predict_logs': [True, False]
+        'predict_logs': [False] # [True, False] True gives nans all the time
     }
 
     def __init__(self, features_count=27, sess=None, plot_dir=None, batch_size=100, hidden_features=[100], predict_logs=False):
@@ -26,16 +26,6 @@ class FeedForwardNN1(FeedForward):
         self.input = tf.placeholder(dtype=tf.float32, shape=[None, self.features_count])
         self.true_sales = tf.placeholder(dtype=tf.float32, shape=[None, 1])
 
-        """
-        # forwarding
-        self.weights_1 = weight_variable([self.features_count, 1])
-        self.bias_1 = bias_variable([1, 1])
-        self.out_1 = tf.nn.relu(tf.matmul(self.input, self.weights_1) + self.bias_1)
-
-        self.weights_2 = weight_variable([self.features_count, 1])
-        self.bias_2 = bias_variable([1, 1])
-        self.output = tf.matmul(self.input, self.weights_1) + self.bias_1
-        """
         # forwarding
         self.weights, self.biases = [], []
         features_in = self.features_count
@@ -56,6 +46,8 @@ class FeedForwardNN1(FeedForward):
                     tf.matmul(prev, w) + b
                 )
             )
+            prev = self.layers[-1]
+
         self.weights.append(
             weight_variable([self.hidden_features[-1], 1])
         )
