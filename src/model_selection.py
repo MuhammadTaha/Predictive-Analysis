@@ -116,7 +116,7 @@ def model_selection(extend_existing_results=True):
 
     # initialize the best model
     best_score = max([class_result["score"] for class_result in result.values()])
-    best_class, best_params = [(class_name, result[class_name] )
+    best_class, best_params = [(class_name, result[class_name]["hyper_parameters"] )
                                 for class_name in result.keys()
                                 if result[class_name]["score"] == best_score][0]
     model_class = [model_class for model_class in MODELS if model_class.__name__==best_class][0]
@@ -126,7 +126,9 @@ def model_selection(extend_existing_results=True):
 
 def train_best_model():
     model = model_selection()
-    data = Data()
+    batches = np.random.permutation(data.batches_X.shape[0])
+    split = int(0.75*len(batches))
+    data.train_test_split(set(batches[:split]), set(batches[split:]))
     model.fit(data)
     print("Save the best trained model")
     try:
