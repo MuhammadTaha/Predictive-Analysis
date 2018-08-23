@@ -1,11 +1,21 @@
 """
 This is for tries that should not ent up in the actual app
 """
+
 from visualize_predictions import visualize_predictions
 import pdb
 import tensorflow as tf
 from forecaster import *
 from data import *
+
+try:
+    from src.data import *
+    from src.forecaster import *
+except ModuleNotFoundError:
+    print("Use relative import without src")
+    from data import *
+    from forecaster import *
+
 
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -124,6 +134,7 @@ def try_model_wo_sess(model_type, plot_dir=None):
 
 
 def main():
+    d = Data()
     #  choose the methods to try here
     #  time_series_example()
     #  howmanyfeatures()
@@ -131,7 +142,6 @@ def main():
     #  time_series_example()
     #
     # linear_regression(train_new=False)
-    print("hello world")
     AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
     #feedforwardnn(train_new=True)
     #naive_classifier()

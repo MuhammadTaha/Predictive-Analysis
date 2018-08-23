@@ -1,16 +1,12 @@
-from .data_extraction import *
-import pandas as pd
-import zipfile
-import os
-import tensorflow as tf
-import numpy as np
-import datetime
-import random
 
-
-
+try:
+    from src.data.data_extraction import  DataExtraction
+except ModuleNotFoundError:
+    from .data_extraction import DataExtraction
 
 global feature_constants
+
+
 class AbstractData(DataExtraction):
     def __init__(self, *args, **kwargs):
 
@@ -96,6 +92,7 @@ class AbstractData(DataExtraction):
         :return y: nd.array of shape (batch_size, 1)
         """
         return self.X_test, self.y_test
+
 
     def validation_batches(self,forecaster = "linear regressor"):
         result = df[df["Store"] == store_id].iloc[:batch_size]

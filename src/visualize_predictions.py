@@ -1,9 +1,12 @@
-from data import *
-import pdb
-import tensorflow as tf
-from forecaster import *
+try:
+    from src.data.timeseries_data import TimeSeriesData
+    from src.forecaster import *
+except ModuleNotFoundError:
+    from data.timeseries_data import TimeSeriesData
+    from forecaster import *
 import os
 import numpy as np
+from matplotlib import pyplot as plt
 
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -22,9 +25,8 @@ def plot_rows(data, forecaster, row_ids, name, output_dir):
     def predictions_for(date):
         X, y = data._extract_rows(data.train.index[data.train["Date"] == date].tolist())
         p = forecaster.predict(X)
-        error = forecaster.sess.run(forecaster.loss, feed_dict = {forecaster.input: X, forecaster.true_sales: y})
-        return np.mean(p), error
-
+        date_error = forecaster.score(X, y)
+        return np.mean(p), date_error
 
     avg_sales = [np.mean(sales_for(i)) for i in date_keys]
     A = np.array([predictions_for(i) for i in date_keys])
@@ -44,7 +46,7 @@ def plot_rows(data, forecaster, row_ids, name, output_dir):
     plt.savefig(output_dir + "/{}-error.png".format(name))
 
 
-def visualize_predictions(forecaster, output_dir):
+def visualize_predictions(forecaster, output_dir, data = None):
     """
     visualizes predictions for a forecaster
     :param forecaster: AbstractForecaster or str where to load a forecaster
@@ -53,13 +55,15 @@ def visualize_predictions(forecaster, output_dir):
     - Avg prediction and error per day
     - predictions and error for a random store
     """
-    data = TimeSeriesData()
+    if data is None:
+        data = TimeSeriesData()
     date_keys = sorted(data.train.Date.unique())
 
-    try: os.makedirs(output_dir)
-    except FileExistsError: pass
+    try:
+        os.makedirs(output_dir)
+    except FileExistsError:
+        pass
 
-    plot_rows(data, forecaster, list(range(1, 20000, 1000)), "test", output_dir)
     # plot average sales + mse per day
     row_ids = list(range(1, data.time_count))
     plot_rows(data, forecaster, row_ids, "all", output_dir)
@@ -71,6 +75,27 @@ def visualize_predictions(forecaster, output_dir):
 
     # plot random store
     store_id = np.random.randint(1, data.store_count)
-    row_ids = data.train.index[data.Store == store_id]
+    row_ids = data.train.index[data.train.Store == store_id]
     plot_rows(data=data, forecaster=forecaster, row_ids=row_ids, name="Store-{}".format(store_id), output_dir=output_dir)
 
+
+def visualize_predictions_quick(forecaster, output_dir, store_id):
+    """
+    visualizes predictions for a forecaster
+    :param forecaster: AbstractForecaster or str where to load a forecaster
+    :param output_dir: str where to save the plots
+    Visualizations:
+    - Avg prediction and error per day
+    - predictions and error for a random store
+    """
+    data = TimeSeriesData(keep_zero_sales=True)
+    date_keys = sorted(data.train.Date.unique())
+
+    try:
+        os.makedirs(output_dir)
+    except FileExistsError:
+        pass
+    print("plot to ", output_dir)
+
+    row_ids = data.train.index[data.train.Store == store_id]
+    plot_rows(data=data, forecaster=forecaster, row_ids=row_ids, name="Store-{}".format(store_id), output_dir=output_dir)

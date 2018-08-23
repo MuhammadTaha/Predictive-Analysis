@@ -1,10 +1,18 @@
-from data import Data, PredictedTimeseriesData
 from matplotlib import pyplot as plt
 import numpy as np
 import os
 from sklearn.svm import SVR
-from forecaster import LinearRegressor
 import tensorflow as tf
+
+try:
+    from src.data.feedforward_data import FeedForwardData as Data
+    from src.data.predicted_data import PredictedTimeseriesData
+    from src.forecaster import LinearRegressor
+except ModuleNotFoundError:
+    print("Use relative import without src")
+    from data.feedforward_data import FeedForwardData as Data
+    from data.predicted_data import PredictedTimeseriesData
+    from forecaster import LinearRegressor
 
 import pdb
 

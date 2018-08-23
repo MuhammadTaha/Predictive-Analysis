@@ -1,14 +1,16 @@
-import pandas as pd
-import zipfile
 import os
-import tensorflow as tf
-import numpy as np
-import datetime
 import random
-from .data_extraction import DataExtraction
+
+from sklearn.externals import joblib
+
+try:
+    from src.data.data_extraction import  DataExtraction, DATA_DIR, DATA_PICKLE_FILE
+except ModuleNotFoundError:
+    from .data_extraction import DataExtraction
+    from .data_extraction import DATA_DIR, DATA_PICKLE_FILE
 
 
-class Data(DataExtraction):
+class FeedForwardData(DataExtraction):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._prepare_random_batches()

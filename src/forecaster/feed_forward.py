@@ -1,7 +1,12 @@
-from .abstract_forecaster import *
+try:
+    from src.forecaster.abstract_forecaster import *
+except ModuleNotFoundError:
+    from .abstract_forecaster import *
 import uuid
 import pdb
-
+import tensorflow as tf
+import numpy as np
+from matplotlib import pyplot as plt
 EPS = 1
 
 
@@ -11,6 +16,13 @@ def early_stopping(train_step, val_losses, epochs):
 
 def early_stopping_(train_step, val_losses, epochs):
     return len(val_losses) - np.argmax(val_losses) < EPOCHS_BEFORE_STOP
+
+
+def weight_variable(shape):
+    return tf.Variable(tf.truncated_normal(shape, stddev=0.1))
+
+
+def bias_variable(shape): return tf.Variable(tf.constant(0.1, shape=shape))
 
 
 class FeedForward(AbstractForecaster):
@@ -26,7 +38,7 @@ class FeedForward(AbstractForecaster):
         eg we would destroy another trained model. (I couldn't find a way to initialize only the variables
         used by this class)
     """
-    def __init__(self, features_count=25, sess=None, plot_dir=None, batch_size=100):
+    def __init__(self, features_count=27, sess=None, plot_dir=None, batch_size=100):
         """
         :param features_count: #features of X
         :param sess: tf.Session to use, per default, a new session will be created.
@@ -63,7 +75,7 @@ class FeedForward(AbstractForecaster):
 
     def _predict_zero_if_closed(self):
         self.output *= self.input * tf.constant(
-            np.eye(self.input.shape[1])[FEATURES["open"]][None, ...]  # e_18 in shape (1 <broadcasts to #samples>, features_count)
+            np.eye(self.input.shape[1])[OPEN][None, ...]  # e_18 in shape (1 <broadcasts to #samples>, features_count)
             , dtype=tf.float32)
 
     def score(self, X, y):
@@ -78,14 +90,13 @@ class FeedForward(AbstractForecaster):
         name = self.__class__.__name__ + str(uuid.uuid4())[:5]
 
         print("({}) Start training".format(self.__class__.__name__))
-        # linear regression can't overfit, so as stopping criterion we take that the changes are small
-        w_old, w_curr, b_old, b_curr = 0, 0, 0, 0
+        #  linear regression can't overfit, so as stopping criterion we take that the changes are small
+
         train_losses, val_losses, val_times = [np.inf], [np.inf], [np.inf]
         train_step = 0
 
-
         while early_stopping(train_step, val_losses, data.epochs): # no improvement in the last 10 epochs
-            X, y = data.next_train_batch(self.batch_size)
+            X, y = data.next_train_batch()
             train_loss, _ = self.sess.run([self.loss, self.train_step],
                                     feed_dict={self.input: X, self.true_sales: y})
             #  logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))

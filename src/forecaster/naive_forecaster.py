@@ -1,15 +1,21 @@
-from .abstract_forecaster import *
+try:
+    from src.forecaster.abstract_forecaster import *
+except ModuleNotFoundError:
+    from .abstract_forecaster import *
+import numpy as np
 
 
 class NaiveForecaster(AbstractForecaster):
     """
     Return the average of the store on the given weekday
     """
+    params_grid = {}
+
     def __init__(self):
         self.trained = True
 
     def _decision_function(self, X):
-        return X[:, FEATURES["weekday_store_avg"], None]*X[:, FEATURES["open"], None]
+        return X[:, WEEKDAY_STORE_AVG, None]*X[:, OPEN, None]
 
     def _train(self, *args, **kwargs):
         return
@@ -26,11 +32,13 @@ class NaiveForecaster2(AbstractForecaster):
     """
     Return the average of the store in the week of the year
     """
+    params_grid = {}
+
     def __init__(self):
         self.trained = True
 
     def _decision_function(self, X):
-        return X[:, FEATURES["week_of_year_avg"], None]*X[:, FEATURES["open"], None]
+        return X[:, WEEK_OF_YEAR_AVG, None]*X[:, OPEN, None]
 
     def _train(self, *args, **kwargs):
         return

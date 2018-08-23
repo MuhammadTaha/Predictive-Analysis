@@ -18,61 +18,59 @@ import pdb
 - Estimates missing data
 """
 
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
+DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
 
-class DataExtraction():
-
-    def __init__(self, dir="data", p_train=0.6, p_val=0.2, p_test=0.2, toy=False):
+class DataExtraction:
+    def __init__(self, data_dir=DATA_DIR, toy=False, keep_zero_sales=False):
         """
-        :param dir: location of data.zip
-        :param p_train: percentage of the labeled data used for training
-        :param p_val: percentage of the labeled data used for validation
-        :param p_test: percentage of the labeled data used for testing
+        :param data_dir: location of data.zip
         :param toy: if True, take only data of the first 10 stores for model development
 
         Extracts the data and saves the row_ids for train, val and test data
         Features will be extracted when a certain row is requested in order to save memory
         """
-        assert p_train + p_val + p_test == 1
-        self.p_train, self.p_val, self.p_test = p_train, p_val, p_test
 
-        self.data_dir = dir
+        self.data_dir = data_dir
 
         # check if files are extracted
-        if set(os.listdir(dir)) >= set(["sample_submission.csv", "store.csv", "test.csv", "train.csv"]):
-            print("Data is extracted already")
-        else:
-            DataExtraction.extract(dir + "/data.zip", dir)
+        if not set(os.listdir(data_dir)) >= set(["sample_submission.csv", "store.csv", "test.csv", "train.csv"]):
+            print("unzip data.zip")
+            DataExtraction.extract(data_dir + "/data.zip", data_dir)
 
         # load into pandas
-        self.store = pd.read_csv(dir + "/store.csv")
-        self.final_test = pd.read_csv(dir + "/test.csv")
-        self.train = pd.read_csv(dir + "/train.csv")
+        self.store = pd.read_csv(data_dir + "/store.csv")
+        self.final_test = pd.read_csv(data_dir + "/test.csv")
+        self.train = pd.read_csv(data_dir + "/train.csv")
 
         if toy:
-            self.train = self.train.loc[self.train.Store < 10]
+            self.train = self.train.loc[self.train.Store < 3]
+
+        # clean stores with no sales and closed
+
+        #if not keep_zero_sales:
+        #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
         self.date_keys = sorted(self.train.Date.unique())
 
-        self.epochs = 0
-        self.is_new_epoch = True
-
         self.features_count = len(self._extract_row(1))
 
-    def _new_epoch(self):
-        self.used_this_epoch = set()
-        self.epochs += 1
-        self.is_new_epoch = True
-
     def _extract_label(self, row_id):
-        # extracts the sales from the specified row
+        #  extracts the sales from the specified row
         return [self.train.iloc[row_id]["Sales"]]
 
     def _extract_rows(self, row_ids):
         X = np.array([self._extract_row(i) for i in row_ids])
         y = np.array([self._extract_label(i) for i in row_ids])
-        return X, y
+
+    def extract_rows_and_days(self, row_ids):
+        X = np.array([self._extract_row(i) for i in row_ids])
+        y = np.array([self._extract_label(i) for i in row_ids])
+        start_date = self.str_to_date(self.train.iloc[-1].Date)
+        days = np.array([(self.str_to_date(self.train.iloc[row_id].Date) - start_date).days for row_id in row_ids])
+        return days, X, y
 
     def _extract_row(self, row_id):
         """
@@ -124,6 +122,14 @@ class DataExtraction():
             StateHoliday                {0, 'b', 'a', '0', 'c'} => one hot 4
             SchoolHoliday	            {0,1}
         """
+        try:
+            row = self.train.iloc[row_id]
+        except:
+            print(row_id)
+            pdb.set_trace()
+        return self._extract_loaded_row(row)
+
+    def _extract_loaded_row(self, row):
         abcd = {
             "a": [1, 0, 0, 0],
             "b": [0, 1, 0, 0],
@@ -136,7 +142,6 @@ class DataExtraction():
             "c": [0, 0, 1]
         }
 
-        row = self.train.iloc[row_id]
         store_id = row["Store"]
         store = self.store.iloc[store_id - 1]
 
@@ -160,16 +165,11 @@ class DataExtraction():
         weekday_store_avg = self._weekday_store_avg(row)
         week_of_year_avg = self._week_of_year_avg(row)
 
-        # if new features are added, add their index to src/features.json
+        # features = store_type + assortment + [competition_distance, competition_open, promo_since_days,
+        #          days_since_interval] + day_of_week + [open, promo] + state_holiday + [school_holiday]
         features = np.concatenate((store_type, assortment, [competition_distance, competition_open, promo_since_days,
                                                             days_since_interval], day_of_week, [open, promo],
                                    state_holiday, [school_holiday, weekday_store_avg, week_of_year_avg]))
-
-        if any(np.isnan(features)):
-            index = np.where(np.isnan(features))
-            print("Error at index", index)
-            pdb.set_trace()
-
         return features
 
     def str_to_date(self, date_str):
@@ -181,8 +181,8 @@ class DataExtraction():
         weekday = row["DayOfWeek"]
         store_id = row["Store"]
         avg = np.mean(self.train.loc[(self.train.Store == store_id)
-                           & (self.train.DayOfWeek == weekday)
-                           & (self.train.Open == 1)]["Sales"])
+                                       & (self.train.DayOfWeek == weekday)
+                                       & (self.train.Open == 1)]["Sales"])
 
         return avg if avg is not np.isnan(avg) else 0
 
@@ -194,15 +194,17 @@ class DataExtraction():
             dates = []
             for offset in range(-3, 4):
                 mm_dd = (date +  datetime.timedelta(days = offset)).isoformat()[5:] # isoformat is "YYYY-MM-DD"
+
                 for YYYY in ["2013", "2014", "2015"]:
                     dates.append(YYYY + "-" + mm_dd)
             return dates
 
         dates = get_dates()
 
-        avg =  np.mean(self.train.loc[(self.train.Store == store_id)
-                           & self.train.Date.isin(dates)
-                           & (self.train.Open == 1)]["Sales"])
+        avg = np.mean(self.train.loc[(self.train.Store == store_id)
+                      & self.train.Date.isin(dates)
+                      & (self.train.Open == 1)]["Sales"])
+
         return avg if avg is not np.isnan(avg) else 0
 
     def _competition_distance(self, value):

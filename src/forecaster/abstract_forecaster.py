@@ -1,19 +1,17 @@
 from abc import ABC, abstractmethod
 from sklearn.utils.validation import check_X_y, check_array
 from sklearn.externals import joblib
-from sklearn import model_selection
 import os
 import datetime
-from evaluate import Backtesting
 from sklearn.model_selection import cross_val_score
-import tensorflow as tf
-from matplotlib import pyplot as plt
-import numpy as np
-import logging
-import json
 
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../features.json"), "r") as file:
-    FEATURES = json.load(file)
+import logging
+try:
+    from src.data.feature_enum import *
+except ModuleNotFoundError:
+    from data.feature_enum import *
+
+
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
 
@@ -68,11 +66,11 @@ class AbstractForecaster(ABC):
         y = self._decision_function(X)
 
         try:
-            assert all(y == y*X[:, FEATURES["open"], None])
+            assert all(y == y*X[:, OPEN, None])
         except AssertionError:
             print("({}) Warning: Original prediction not zero for rows where stores are closed")
 
-        return y * X[:, FEATURES["open"], None]
+        return y * X[:, OPEN, None]
 
     @abstractmethod
     def _decision_function(self, X):
@@ -90,17 +88,19 @@ class AbstractForecaster(ABC):
         """
         pass
 
+    """
     def evaluate(self, score_function):
-        """
+        "" "
             Backtesting is used to evaluate the total performance of the model after training
         :param score_function: function used to compare predictions and actualls 
         :return: float number from 0-100 representing the percentile score of the current model.
-        """
+        "" "
         backtesting_instance = Backtesting(self, score_function)
         return backtesting_instance.evaluate()
+    """
 
     @abstractmethod
-    def score(self, X, y=None):
+    def score(self, X, y):
         """
             used to get an impression of the performance of the current model.
         """
@@ -108,19 +108,12 @@ class AbstractForecaster(ABC):
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        # joblib.dump(self, os.path.join(MODEL_DIR, file_name))
+        joblib.dump(self, os.path.join(MODEL_DIR, file_name))
         return os.path.join(MODEL_DIR, file_name)
 
     @staticmethod
     def load_model(file_name):
         return joblib.load(os.path.join(MODEL_DIR, file_name))
-
-
-def weight_variable(shape):
-    return tf.Variable(tf.truncated_normal(shape, stddev=0.1))
-
-
-def bias_variable(shape): return tf.Variable(tf.constant(0.1, shape=shape))
 
 
 
