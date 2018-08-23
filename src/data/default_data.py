@@ -95,7 +95,7 @@ class Data():
                 self.batches_y = np.concatenate([self.batches_y, batches_y], 0)
             else:
                 self.batches_X, self.batches_y = batches_X, batches_y
-        self.store = np.array(store)
+        self.store = np.array(self.store)
         self.save(os.path.join(DATA_DIR, "extracted"))
 
     def all_train_data(self):

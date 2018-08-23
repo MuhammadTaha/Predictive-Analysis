@@ -14,7 +14,7 @@ RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_
 
 os.makedirs(RESULT_DIR, exist_ok=True)
 
-data = Data(update_disk=True)
+data = Data()
 print("got some data")
 
 def estimate_score(model):
@@ -55,7 +55,7 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
         assert isinstance(params_choices[key], np.ndarray), "{} has for param of unknown type for {}".format(model_class.__name__, key)
         return np.random.choice(params_choices[key])
 
-    result, best_params, best_score, tried = [], None, np.INF, []
+    result, best_params, best_score, tried = [], None, np.inf, []
     for i in range(num_combinations):
         while params is not None and not params in tried:
             params = {key: random_choice(key) for key in params_choices.keys()}
@@ -136,4 +136,4 @@ def train_best_model():
 
 
 def main():
-    test_estimate_score()
+    train_best_model()
