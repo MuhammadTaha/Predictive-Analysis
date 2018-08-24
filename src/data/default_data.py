@@ -14,7 +14,7 @@ BATCH_SIZE = 50
 
 class Data():
     def __init__(self, update_disk=False):
-        self.batches_X, self.batches_y, self.store_ids, self.store_ids = None, None, None, None
+        self.batches_X, self.batches_y, self.store_ids = None, None, None
         # self.store_ids is to look up the store_id of a batch, has shape (#batches)
         try:
             assert not update_disk

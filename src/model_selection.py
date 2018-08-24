@@ -15,12 +15,16 @@ RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_
 os.makedirs(RESULT_DIR, exist_ok=True)
 
 data = Data()
-print("got some data")
 
 def estimate_score(model):
     # use the first 1000 batches only
     batches = np.random.permutation(list(range(100)))
-    data.train_test_split(set(batches[:70]), set(batches[70:]))
+
+    batches = np.where(data.store_ids <= 100)[0] # take 100 stores
+    batches = np.random.permutation(batches)
+    split = 0.7*len(batches)
+
+    data.train_test_split(set(batches[:split]), set(batches[split:]))
 
     if hasattr(model, "sess"):
         sess = tf.Session()
@@ -39,7 +43,7 @@ def estimate_score(model):
     return float(np.mean(score))
 
 
-def best_hyperparams_and_score(model_class, num_combinations=2):
+def best_hyperparams_and_score(model_class, num_combinations=10):
     """
     Creates a <model_class.__name__>-hyperparameters.json :
     [ {"params": <params>, "score": <score>}, ...]
@@ -144,4 +148,4 @@ def train_best_model():
 
 
 def main():
-    train_best_model()
+    model_selection(False)
