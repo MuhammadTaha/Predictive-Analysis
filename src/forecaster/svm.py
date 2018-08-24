@@ -7,7 +7,7 @@ import numpy as np
 
 class SVRForecaster(AbstractForecaster):
     params_grid = {
-        "epsilon": range(0, 20, 2),
+        "epsilon": list(range(0, 20, 2)),
         "gamma": ['auto'] + list(range(1, 100, 10))
     }
 

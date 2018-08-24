@@ -66,7 +66,7 @@ class AbstractForecaster(ABC):
         y = self._decision_function(X)
 
         try:
-            assert all(y == y*X[:, OPEN, None])
+            assert (y == y*X[:, OPEN, None]).all()
         except AssertionError:
             print("({}) Warning: Original prediction not zero for rows where stores are closed")
 
