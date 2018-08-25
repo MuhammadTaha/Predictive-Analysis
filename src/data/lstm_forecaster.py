@@ -34,17 +34,19 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
+import matplotlib.pyplot as plt
+
 from .abstract_data import AbstractData
 #
 class LSTMForecaster:
     def forecastor(self):
 #
-        data = [[i for i in range(100)]]
-        data = np.array(data, dtype=float)
+        # data = [[i for i in range(100)]]
+        # data = np.array(data, dtype=float)
 #         target = [[i for i in range(1, 101)]]
 #         target = np.array(target, dtype=float)
 #
-        data = data.reshape((1, 1, 100))
+        # data = data.reshape((1, 1, 100))
 #         target = target.reshape((1, 1, 100))
 #         x_test = [i for i in range(100, 200)]
 #         x_test = np.array(x_test).reshape((1, 1, 100));
@@ -65,6 +67,8 @@ class LSTMForecaster:
         #
         # plt.plot(history.history['loss'])
         # plt.show()
+
+        print("in lstm")
         epochs_number = 4
         model = Sequential()
         # model.add(Embedding(max_features, 128))
@@ -85,16 +89,53 @@ class LSTMForecaster:
 
         model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['accuracy'])
 
-        model.fit(abData.get_training_data(epoch = epochs_number,store_id = [23]),
 
-                  # batch_size=batch_size,
-                  epochs=epochs_number)
+        train_data, test_data = abData.get_training_data(store_id=[23])
+
+        #
+        # print(train_data)
+        # print(test_data)
+
+        # model.fit(abData.get_training_data(epoch = epochs_number,store_id = [23]),
+        #
+        #           # batch_size=batch_size,
+        #           epochs=epochs_number)
+        # print(train_data)
 
 
-        
+        print('Train...')
+
+        model.fit(train_data,epochs=epochs_number)
 
 
-        score, acc = model.evaluate(x_test, y_test,
-                                    batch_size=batch_size)
-        print('Test score:', score)
-        print('Test accuracy:', acc)
+        # history = model.fit(train_data,
+        #                     validation_split=0.2, verbose=0)
+
+        #
+        #
+        #
+        model.summary()
+        # print(history)
+        # score, acc = model.evaluate(test_data,
+        #                             batch_size=50)
+        #
+        # score, acc = model.evaluate(test_data,
+        #                             batch_size=batch_size)
+
+
+        # plot_history(history)
+
+        # print('Test score:', score)
+        # print('Test accuracy:', acc)
+
+
+def plot_history(history):
+  plt.figure()
+  plt.xlabel('Epoch')
+  plt.ylabel('Mean Abs Error [1000$]')
+  plt.plot(history.epoch, np.array(history.history['mean_absolute_error']),
+           label='Train Loss')
+  plt.plot(history.epoch, np.array(history.history['val_mean_absolute_error']),
+           label = 'Val loss')
+  plt.legend()
+  plt.ylim([0,5])

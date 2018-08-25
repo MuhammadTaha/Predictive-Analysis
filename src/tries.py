@@ -134,20 +134,20 @@ def main():
     #
     # linear_regression(train_new=False)
     # print("hello world")
-    abData  = AbstractData()
+    # abData  = AbstractData()
     #
 
     # give the specific store ids for getting data for specific store in array
     # or leave it empty for getting the entire data set.
 
-    train_data,test_data = abData.get_training_data(store_id = [23])
-    # train_data,test_data = abData.get_training_data()
-    print("train data")
-    print(train_data)
-    print("test data")
-    print(test_data)
-
-    #     # LSTMForecaster.forecastor(LSTMForecaster)
+    # train_data,test_data = abData.get_training_data(store_id = [23])
+    # # train_data,test_data = abData.get_training_data()
+    # print("train data")
+    # print(train_data)
+    # print("test data")
+    # print(test_data)
+    print("here")
+    LSTMForecaster.forecastor(LSTMForecaster)
     #     #feedforwardnn(train_new=True)
     #     #naive_classifier()
     #     # try_model_wo_sess(NaiveForecaster2)

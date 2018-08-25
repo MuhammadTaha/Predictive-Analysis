@@ -75,7 +75,7 @@ class AbstractData():
         # self.df['is_used'] = 0
 
 
-        print(np.shape(stores_data))
+        # print(np.shape(stores_data))
         # print(stores_data)
 
 
