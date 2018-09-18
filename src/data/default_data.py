@@ -50,7 +50,7 @@ class Data():
             print("... generate data for store", store_id)
 
         # generate all batches
-        df = self.data_extract.train
+        df = self.data_extract.data
         store_ids = df.Store.unique()
 
         row_ids = df.index[df.Store == store_id]
@@ -84,7 +84,7 @@ class Data():
     def extract(self):
         self.data_extract = DataExtraction()
         # generate all batches
-        df = self.data_extract.train
+        df = self.data_extract.data
         self.store_ids = list(df.Store.unique())
         self.store = []
 
