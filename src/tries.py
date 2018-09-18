@@ -133,8 +133,18 @@ def try_model_wo_sess(model_type, plot_dir=None):
     visualize_predictions(model, plot_dir)
 
 
+def test_lstm_data():
+    data = LSTMData(is_debug=True, update_disk=True)
+    data.train_test_split(list(range(80)), list(range(100, 160)))
+    X, Y = data.next_train_batch()
+    print("one train: X, Y: ", np.array(X).shape, np.array(Y).shape)
+    X, Y = data.all_test_data()
+    print("all test: X, Y: ", np.array(X).shape, np.array(Y).shape)
+
+
 def main():
-    d = Data()
+    test_lstm_data()
+    #d = Data()
     #  choose the methods to try here
     #  time_series_example()
     #  howmanyfeatures()
@@ -142,7 +152,7 @@ def main():
     #  time_series_example()
     #
     # linear_regression(train_new=False)
-    AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
+    #AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
     #feedforwardnn(train_new=True)
     #naive_classifier()
     # try_model_wo_sess(NaiveForecaster2)

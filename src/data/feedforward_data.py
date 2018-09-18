@@ -58,3 +58,12 @@ class FeedForwardData(DataExtraction):
         :return y: nd.array of shape (batch_size, 1)
         """
         return self.X_test, self.y_test
+
+    def train_test_split(self, train_point_ids, test_point_ids):
+        pass
+
+    def all_train_data(self):
+        pass
+
+    def all_test_data(self):
+        pass
