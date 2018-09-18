@@ -25,12 +25,11 @@ class LSTMForecaster(AbstractForecaster):
                        activation='relu',
                        dropout=dropout,
                        recurrent_dropout=recurrent_dropout,
-                       recurrent_activation=None,
                        input_shape=(num_timesteps, features_count)
                        ))
         model.add(Dense(1, activation='linear'))
 
-        model.compile(loss=tf_rmspe, optimizer='adam', metrics=['accuracy'])
+        model.compile(loss=tf_rmspe, optimizer='adam', metrics=['accuracy', 'mse'])
 
         self.model = model
 

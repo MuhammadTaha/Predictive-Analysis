@@ -142,10 +142,15 @@ def test_lstm_data():
     print("all test: X, Y: ", np.array(X).shape, np.array(Y).shape)
 
     lstm = LSTMForecaster(num_timesteps=data.num_tsteps, features_count=data.features_count)
+    lstm.trained = True
+    #print("prediction before training", lstm.predict(data.X_val))
     lstm.fit(data)
-    pdb.set_trace()
-    print(data.X_val)
-    print(lstm.score(data.X_val, data.y_val))
+    p = lstm.predict(data.X_val)
+    closed = np.where(data.X_val[:,-1,OPEN]==0)[0]
+    if np.any(p[closed] > 0):
+        print(">0 where store is closed")
+
+    print("score after training", lstm.score(data.X_val, data.y_val))
 
 
 

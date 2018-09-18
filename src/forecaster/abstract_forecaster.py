@@ -21,16 +21,10 @@ logger.setLevel(logging.DEBUG)
 
 EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training is stopped
 
-EPS = 100
+EPS = 10
 
 
 def rmspe(sales, prediction):
-    pdb.set_trace()
-    a = (prediction - sales + EPS) / (sales + EPS)
-    b = np.square(a)
-    c = np.mean(b)
-    d = np.sqrt(c)
-
     return np.sqrt(np.mean(np.square(
         (prediction - sales + EPS) / (sales + EPS)
     )))
