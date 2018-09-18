@@ -10,19 +10,6 @@ import tensorflow as tf
 
 import pdb
 
-EPS = 100
-
-def rmspe(sales, prediction):
-    return np.sqrt(np.mean(np.square(
-        (prediction - sales + EPS) / (sales + EPS)
-    )))
-
-
-def tf_rmspe(sales, prediction):
-    return tf.sqrt(tf.reduce_mean(tf.square(
-        (prediction - sales + EPS) / (sales + EPS)
-    )))
-
 
 class LSTMForecaster(AbstractForecaster):
     params_grid = {
@@ -53,7 +40,7 @@ class LSTMForecaster(AbstractForecaster):
     def _train(self, data):
         X, y = data.all_train_data()
         print("Fit LSTM with X: {} and y: {}".format(np.array(X).shape, np.array(y).shape))
-        self.model.fit(X, y, epochs=100)
+        self.model.fit(X, y, epochs=10, sample_weight=X[:, -1, OPEN], batch_size=32)
 
     def _build(self):
         pass

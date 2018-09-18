@@ -26,7 +26,7 @@ class SVRForecaster(AbstractForecaster):
 
     def score(self, X, y):
         prediction = self.predict(X)
-        return np.sqrt(np.mean(np.square((prediction - y + 0.1) / (y + 0.1))))
+        return rmspe(y, prediction)
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")

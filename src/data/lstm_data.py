@@ -117,7 +117,7 @@ class LSTMData():
             x, y = self.get_point(point_id)
             X.append(x)
             Y.append(y)
-        return np.array(X), np.array(Y)
+        return self.check(X, Y)
 
     def all_test_data(self):
         X, Y = [], []
@@ -125,7 +125,7 @@ class LSTMData():
             x, y = self.get_point(point_id)
             X.append(x)
             Y.append(y)
-        return np.array(X), np.array(Y)
+        return self.check(X, Y)
 
     def save(self, path):
         os.makedirs(path, exist_ok=True)
@@ -151,6 +151,12 @@ class LSTMData():
         self.new_epoch()
         self.X_val, self.y_val = self.all_test_data()
 
+    def check(self, X, Y):
+        X, Y = np.array(X), np.array(Y)
+        assert np.all(np.isfinite(X)), "X contains bad values: {}".format(np.where(not np.isfinite(X)))
+        assert np.all(np.isfinite(Y)), "Y contains bad values: {}".format(np.where(not np.isfinite(Y)))
+        return X, Y
+
     def next_train_batch(self):
         self.is_new_epoch = False
         if len(self.train_point_ids - self.used_this_epoch) < self.batch_size:
@@ -165,4 +171,4 @@ class LSTMData():
             X.append(x)
             Y.append(y)
 
-        return np.array(X), np.array(Y)
+        return self.check(X, Y)

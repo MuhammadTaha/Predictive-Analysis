@@ -3,7 +3,9 @@ from sklearn.utils.validation import check_X_y, check_array
 from sklearn.externals import joblib
 import os
 import datetime
-from sklearn.model_selection import cross_val_score
+import tensorflow as tf
+import numpy as np
+import pdb
 
 import logging
 try:
@@ -12,13 +14,34 @@ except ModuleNotFoundError:
     from data.feature_enum import *
 
 
-
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
 
 logger = logging.getLogger("forecaster")
 logger.setLevel(logging.DEBUG)
 
 EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training is stopped
+
+EPS = 100
+
+
+def rmspe(sales, prediction):
+    pdb.set_trace()
+    a = (prediction - sales + EPS) / (sales + EPS)
+    b = np.square(a)
+    c = np.mean(b)
+    d = np.sqrt(c)
+
+    return np.sqrt(np.mean(np.square(
+        (prediction - sales + EPS) / (sales + EPS)
+    )))
+
+
+def tf_rmspe(sales, prediction):
+    print("sales", sales.shape, "prediction", prediction.shape)
+    return tf.sqrt(tf.reduce_mean(tf.square(
+        (prediction - sales + EPS) / (sales + EPS)
+    ), axis=1))
+
 
 class AbstractForecaster(ABC):
     """
@@ -66,15 +89,21 @@ class AbstractForecaster(ABC):
             y.shape = (#samples, 1)
         """
         assert self.trained, "Model is not trained cannot predict"
-        X = check_array(X)
+        #  X = check_array(X)
         y = self._decision_function(X)
 
         try:
-            assert (y == y*X[:, OPEN, None]).all()
+            if len(X.shape) == 2:  # feed forward data
+                assert (y == y*X[:, OPEN, None]).all()
+                filter_open = X[:, OPEN, None]
+            elif len(X.shape) == 3:  # lstm data
+                filter_open = X[:, -1, OPEN, None]
+            else:
+                raise Warning("X shape is weird")
         except AssertionError:
             print("({}) Warning: Original prediction not zero for rows where stores are closed")
 
-        return y * X[:, OPEN, None]
+        return y * filter_open
 
     @abstractmethod
     def _decision_function(self, X):
@@ -108,7 +137,8 @@ class AbstractForecaster(ABC):
         """
             used to get an impression of the performance of the current model.
         """
-        return cross_val_score(self, X, y)
+        p = self.predict(X)
+        return rmspe(y, p)
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")

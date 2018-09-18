@@ -143,7 +143,9 @@ def test_lstm_data():
 
     lstm = LSTMForecaster(num_timesteps=data.num_tsteps, features_count=data.features_count)
     lstm.fit(data)
-    print(lstm.evaluate(data.X_val, data.y_val))
+    pdb.set_trace()
+    print(data.X_val)
+    print(lstm.score(data.X_val, data.y_val))
 
 
 
