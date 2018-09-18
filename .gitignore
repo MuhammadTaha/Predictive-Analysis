@@ -4,3 +4,4 @@ data/*.csv
 *.pyc
 data/.~lock.store.csv#
 .temp
+data/extracted/*
