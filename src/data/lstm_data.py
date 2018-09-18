@@ -34,6 +34,7 @@ class LSTMData():
         self.train_point_ids = set()
         self.test_point_ids = set()
         self.is_new_epoch = None
+        self.features_count = np.array(self.get_point(0)[0]).shape[1]  # of 1st (X,y) pair, take 2nd element of X.shape
 
     def extract(self):
         print("... Extracting the data")
@@ -116,7 +117,7 @@ class LSTMData():
             x, y = self.get_point(point_id)
             X.append(x)
             Y.append(y)
-        return X, Y
+        return np.array(X), np.array(Y)
 
     def all_test_data(self):
         X, Y = [], []
@@ -124,7 +125,7 @@ class LSTMData():
             x, y = self.get_point(point_id)
             X.append(x)
             Y.append(y)
-        return X, Y
+        return np.array(X), np.array(Y)
 
     def save(self, path):
         os.makedirs(path, exist_ok=True)
@@ -164,4 +165,4 @@ class LSTMData():
             X.append(x)
             Y.append(y)
 
-        return X, Y
+        return np.array(X), np.array(Y)

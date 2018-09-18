@@ -5,3 +5,4 @@ from .feed_forward_nn import *
 from .naive_forecaster import *
 from .svm import *
 from .XGBForecaster import *
+from .lstm import *

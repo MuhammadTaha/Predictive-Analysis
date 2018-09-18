@@ -45,7 +45,11 @@ class AbstractForecaster(ABC):
             Function to fit new models.
         :return: trained model
         """
-        X, y = check_X_y(data.X_val, data.y_val, y_numeric=True, warn_on_dtype=True)
+        try:
+            X, y = check_X_y(data.X_val, data.y_val, y_numeric=True, warn_on_dtype=True)
+        except Exception as e:
+            # this check fails for lstm shaped input, so let's print it but allow it
+            print("check_X_y:", type(e), e)
         self.trained = True
         return self._train(data)
 
