@@ -7,7 +7,7 @@ import numpy as np
 import datetime
 import random
 import math
-
+from sklearn.model_selection import train_test_split
 
 class AbstractData():
 
@@ -68,13 +68,13 @@ class AbstractData():
 
         # for x in range(epoch):
         for item in store_id:
-            stores_data = AbstractData.next_train_batch(self, store_id=item, forecaster="linear regressor",batch_size = self.BATCH_SIZE)
+            stores_data.append(AbstractData.next_train_batch(self, store_id=item, forecaster="linear regressor",batch_size = self.BATCH_SIZE))
             # print(len(stores_data))
             # epoch_data.append(stores_data)
         self.reset_dataset()
         # self.df['is_used'] = 0
 
-
+        # print(stores_data)
         # print(np.shape(stores_data))
         # print(stores_data)
 
@@ -82,6 +82,9 @@ class AbstractData():
         train_data_size  = math.ceil(int((len(stores_data) * 2) / 3))
         test_data_size =  len(stores_data) - train_data_size
 
+        # X_train, X_test, y_train, y_test = train_test_split(stores_data, test_size=0.2,shuffle = False)
+        # print (X_train.shape, y_train.shape)
+        # print (X_test.shape, y_test.shape)
 
         train_data = stores_data[:train_data_size]
         test_data = stores_data[-test_data_size:]
@@ -96,70 +99,128 @@ class AbstractData():
         #
         # print(len(epoch_data))
 
-        return train_data,test_data
-        # return stores_data
+        # return train_data,test_data
+        return stores_data
 
+        # return X_train, X_test, y_train, y_test
 
     def next_train_batch(self, store_id = None, forecaster= "linear regressor", batch_size= BATCH_SIZE,start_date = "2013-01-01",end_date="2015-08-01"):#end_date="2015-08-01"):
-        """
-        :param forecastor: Type of forecastor for batch selection
-        :param batch_size: Number of rows, ignored if self.is_time_series is True
-        :return X: nd.array of shape (batch_size, #features)
-        :return y: nd.array of shape (batch_size, 1)
-        """
-        # if len(self.used_this_epoch) == len(self.train_row_ids):
-        #     self._new_epoch()
-        # else:
-        #     self.is_new_epoch = False
-        # batch_size = min(batch_size, len(self.train_row_ids) - len(self.used_this_epoch))
-        # row_ids = random.sample(self.train_row_ids - self.used_this_epoch, batch_size)
-        # self.used_this_epoch = self.used_this_epoch.union(set(row_ids))
-        # return self._extract_rows(row_ids)
-        # with open('src/features.json') as f:
-        #     feature_constants = json.load(f)
-            # print(feature_constants)
 
-        batches = list()
+        batches_train = list()
+        batches_test = list()
+
 
         df = self.df
         if store_id is None:
             stores = df["Store"].unique()
             store_id = random.choice(stores)
 
+        result_date = self.random_dates(start_date, end_date, 1)
 
-        result_date = self.random_dates(start_date,end_date,1)
-        # print(result_date)
-        # mask = (df['Date'] >= "2013-01-01") & (df['Date'] <= end_date)
         mask = (df['Date'] >= result_date) & (df['Date'] <= end_date)
 
         df = df.loc[mask]
         isFinished = False
-        while(isFinished is False):
-        # for x in range(2):
+        while (isFinished is False):
+            # for x in range(2):
             if np.isscalar(store_id) is False:
-                result  =  df[(((df["Store"]).isin(store_id)) & (df["Sales"] != 0) & (df["Customers"] != 0) & (df["is_used"] == 0 | df["is_used"] == 0.0 ))].iloc[:batch_size]
+                result = df[(((df["Store"]).isin(store_id)) & (df["Sales"] != 0) & (df["Customers"] != 0) & (
+                            df["is_used"] == 0 | df["is_used"] == 0.0))].iloc[:batch_size]
             else:
-                result  =  df[(((df["Store"])== store_id) & (df["Sales"] != 0) & (df["Customers"] != 0) & ((df["is_used"] == 0) | (df["is_used"] == 0.0 )))].iloc[:batch_size]
+                result = df[(((df["Store"]) == store_id) & (df["Sales"] != 0) & (df["Customers"] != 0) & (
+                            (df["is_used"] == 0) | (df["is_used"] == 0.0)))].iloc[:batch_size]
 
-            if(len(result) > 0):
+            print(np.array(result).shape)
+            # X_train, X_test, y_train, y_test = train_test_split(result)
+
+            if (len(result) > 0):
                 result['is_used'] = 1
                 df.update(result)
                 self.df.update(result)
-
-                # for row_id in result.index.values:
-                # print(self.dataExtract._extract_rows(result.index.values))
-
                 # print(result.index.values)
-                # batches.append(result.index.values)
-                batches.append(self.dataExtract._extract_rows(result.index.values))
+                # train, test = train_test_split(self.dataExtract._extract_rows(result.index.values), test_size=0.2, shuffle=False)
+                # print(train)
+                # print(test)
+                train,test = train_test_split(self.dataExtract._extract_rows(result.index.values), test_size=0.2, shuffle=False)
+                print(np.array(train).shape)
+                print(np.array(test).shape)
+
+                # print(np.array(train).reshape(1,50,27))
+                # print(test)
+                batches_train.append(train)
+                batches_test.append(test)
+
 
             else:
                 isFinished = True
 
-        # print(result.index.values)
-        # print(batches)
 
-        return batches
+        return batches_train,batches_test
+
+
+    # def next_train_batch(self, store_id = None, forecaster= "linear regressor", batch_size= BATCH_SIZE,start_date = "2013-01-01",end_date="2015-08-01"):#end_date="2015-08-01"):
+    #     """
+    #     :param forecastor: Type of forecastor for batch selection
+    #     :param batch_size: Number of rows, ignored if self.is_time_series is True
+    #     :return X: nd.array of shape (batch_size, #features)
+    #     :return y: nd.array of shape (batch_size, 1)
+    #     """
+    #     # if len(self.used_this_epoch) == len(self.train_row_ids):
+    #     #     self._new_epoch()
+    #     # else:
+    #     #     self.is_new_epoch = False
+    #     # batch_size = min(batch_size, len(self.train_row_ids) - len(self.used_this_epoch))
+    #     # row_ids = random.sample(self.train_row_ids - self.used_this_epoch, batch_size)
+    #     # self.used_this_epoch = self.used_this_epoch.union(set(row_ids))
+    #     # return self._extract_rows(row_ids)
+    #     # with open('src/features.json') as f:
+    #     #     feature_constants = json.load(f)
+    #         # print(feature_constants)
+    #
+    #     batches = list()
+    #
+    #     df = self.df
+    #     if store_id is None:
+    #         stores = df["Store"].unique()
+    #         store_id = random.choice(stores)
+    #
+    #
+    #     result_date = self.random_dates(start_date,end_date,1)
+    #     # print(result_date)
+    #     # mask = (df['Date'] >= "2013-01-01") & (df['Date'] <= end_date)
+    #     mask = (df['Date'] >= result_date) & (df['Date'] <= end_date)
+    #
+    #     df = df.loc[mask]
+    #     isFinished = False
+    #     while(isFinished is False):
+    #     # for x in range(2):
+    #         if np.isscalar(store_id) is False:
+    #             result  =  df[(((df["Store"]).isin(store_id)) & (df["Sales"] != 0) & (df["Customers"] != 0) & (df["is_used"] == 0 | df["is_used"] == 0.0 ))].iloc[:batch_size]
+    #         else:
+    #             result  =  df[(((df["Store"])== store_id) & (df["Sales"] != 0) & (df["Customers"] != 0) & ((df["is_used"] == 0) | (df["is_used"] == 0.0 )))].iloc[:batch_size]
+    #
+    #         if(len(result) > 0):
+    #             result['is_used'] = 1
+    #             df.update(result)
+    #             self.df.update(result)
+    #             # print(self.df.shape)
+    #             # X_train, X_test, y_train, y_test = train_test_split(self.df, test_size=0.2, shuffle=False)
+    #             # print(X_train.shape, y_train.shape)
+    #             # print(X_test.shape, y_test.shape)
+    #             # for row_id in result.index.values:
+    #             # print(self.dataExtract._extract_rows(result.index.values))
+    #
+    #             # print(result.index.values)
+    #             # batches.append(result.index.values)
+    #             batches.append(self.dataExtract._extract_rows(result.index.values))
+    #
+    #         else:
+    #             isFinished = True
+    #
+    #     # print(result.index.values)
+    #     # print(batches)
+    #
+    #     return batches
 
     def validation_batches(self,forecaster = "linear regressor"):
         # result = df[df["Store"] == store_id].iloc[:batch_size]

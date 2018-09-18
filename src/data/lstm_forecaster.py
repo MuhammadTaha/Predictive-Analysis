@@ -35,8 +35,13 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 from .abstract_data import AbstractData
+
+# tf.enable_eager_execution()
+
+
 #
 class LSTMForecaster:
     def forecastor(self):
@@ -72,26 +77,26 @@ class LSTMForecaster:
         epochs_number = 4
         model = Sequential()
         # model.add(Embedding(max_features, 128))
-        model.add(LSTM(128,activation = 'relu',
-                       dropout=0.2,
-                       recurrent_dropout=0.2
+        model.add(LSTM(64,
+                        activation = 'relu',
+                       # dropout=0.2,
+                       # recurrent_dropout=0.2
                        ))
         model.add(Dense(1, activation='sigmoid'))
 
         # try using different optimizers and different optimizer configs
-        model.compile(loss='binary_crossentropy',
-                      optimizer='adam',
-                      metrics=['accuracy'])
+        # model.compile(loss='binary_crossentropy',
+        #               optimizer='adam',
+        #               metrics=['accuracy'])
 
-        print('Train...')
 
         abData  = AbstractData()
 
-        model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['accuracy'])
+        data = abData.get_training_data(store_id=[25])
 
-
-        train_data, test_data = abData.get_training_data(store_id=[23])
-
+        x = np.array(data)
+        print("train batch shape", x.shape)
+        import pdb; pdb.set_trace()
         #
         # print(train_data)
         # print(test_data)
@@ -105,16 +110,30 @@ class LSTMForecaster:
 
         print('Train...')
 
-        model.fit(train_data,epochs=epochs_number)
+        for store_data in data:
+            train_data_array,test_data_array = store_data
+            for train_data in train_data_array:
+                print(np.array(train_data).shape)
+                train_data = np.array(train_data).reshape(1,50,27)
+                print(train_data)
+                #  train,test = train_data
+                # print(train_data)
+                # print(test)
+                # model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['accuracy'])
+                # history = model.fit(train_data)
 
 
-        # history = model.fit(train_data,
-        #                     validation_split=0.2, verbose=0)
+        # model.summary()
+        # print(history)
+        # model.fit(train_data,epochs=epochs_number)
+
+
+        # history = model.fit(X_train, y_train, validation_split=0.2, verbose=0)
+
+        # history = model.fit(X_train,y_train)
 
         #
-        #
-        #
-        model.summary()
+        # model.summary()
         # print(history)
         # score, acc = model.evaluate(test_data,
         #                             batch_size=50)
@@ -129,13 +148,13 @@ class LSTMForecaster:
         # print('Test accuracy:', acc)
 
 
-def plot_history(history):
-  plt.figure()
-  plt.xlabel('Epoch')
-  plt.ylabel('Mean Abs Error [1000$]')
-  plt.plot(history.epoch, np.array(history.history['mean_absolute_error']),
-           label='Train Loss')
-  plt.plot(history.epoch, np.array(history.history['val_mean_absolute_error']),
-           label = 'Val loss')
-  plt.legend()
-  plt.ylim([0,5])
+    def plot_history(history):
+      plt.figure()
+      plt.xlabel('Epoch')
+      plt.ylabel('Mean Abs Error [1000$]')
+      plt.plot(history.epoch, np.array(history.history['mean_absolute_error']),
+               label='Train Loss')
+      plt.plot(history.epoch, np.array(history.history['val_mean_absolute_error']),
+               label = 'Val loss')
+      plt.legend()
+      plt.ylim([0,5])
