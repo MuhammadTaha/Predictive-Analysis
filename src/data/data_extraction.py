@@ -64,6 +64,7 @@ class DataExtraction:
     def _extract_rows(self, row_ids):
         X = np.array([self._extract_row(i) for i in row_ids])
         y = np.array([self._extract_label(i) for i in row_ids])
+        return X, y
 
     def extract_rows_and_days(self, row_ids):
         X = np.array([self._extract_row(i) for i in row_ids])

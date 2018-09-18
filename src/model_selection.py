@@ -9,7 +9,7 @@ except:
     from forecaster import *
 import pdb
 
-MODELS = [LSTMForecaster]  # [SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+MODELS = [SVRForecaster] #[LSTMForecaster]  # [SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
