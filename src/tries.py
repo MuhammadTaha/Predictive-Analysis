@@ -135,6 +135,8 @@ def try_model_wo_sess(model_type, plot_dir=None):
 
 def test_lstm_data():
     data = LSTMData(is_debug=True, update_disk=True)
+    data = LSTMData()
+    print("We have {} train points".format(len(data.batch_info)))
     data.train_test_split(list(range(500)), list(range(500, 750)))
     X, Y = data.next_train_batch()
     print("one train: X, Y: ", np.array(X).shape, np.array(Y).shape)

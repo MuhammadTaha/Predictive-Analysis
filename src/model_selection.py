@@ -1,4 +1,4 @@
-from data import Data
+from data import *
 import numpy as np
 import json
 import os
@@ -9,21 +9,25 @@ except:
     from forecaster import *
 import pdb
 
-MODELS = [SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+MODELS = [LSTMForecaster]  # [SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
 
-data = Data()
+feed_forward_data = FeedForwardData()
+lstm_data = LSTMData(is_debug=True, update_disk=True, timesteps_per_point=10)
+
+NUM_POINTS_FOR_ESTIMATE = 2000 # 50000
 
 def estimate_score(model):
+    data = lstm_data if isinstance(model, LSTMForecaster) else feed_forward_data
     # use the first 1000 batches only
 
-    batches = list(range(1000))
-    batches = np.random.permutation(batches)
-    split = int(0.7*len(batches))
+    points = list(range(NUM_POINTS_FOR_ESTIMATE))
+    points = np.random.permutation(points)
+    split = int(0.7*len(points))
 
-    data.train_test_split(set(batches[:split]), set(batches[split:]))
+    data.train_test_split(set(points[:split]), set(points[split:]))
 
     if hasattr(model, "sess"):
         sess = tf.Session()
@@ -32,14 +36,11 @@ def estimate_score(model):
 
     model.fit(data)
 
-    score = []
-    for batch_id in data.test_batch_ids:
-        score.append(model.score(data.batches_X[batch_id], data.batches_y[batch_id]))
-
+    score = model.score(data.X_val, data.y_val)
     if hasattr(model, "sess"):
         sess.close()
 
-    return float(np.mean(score))
+    return score
 
 
 def best_hyperparams_and_score(model_class, num_combinations=10):
@@ -129,6 +130,7 @@ def model_selection(extend_existing_results=True):
 
 def train_best_model():
     model = model_selection()
+    data = lstm_data if isinstance(model, LSTMForecaster) else feed_forward_data
     batches = np.random.permutation(data.batches_X.shape[0])
     split = int(0.75*len(batches))
     data.train_test_split(set(batches[:split]), set(batches[split:]))

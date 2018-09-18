@@ -15,10 +15,14 @@ class LSTMForecaster(AbstractForecaster):
     params_grid = {
         "hidden_units": list(range(30, 200, 10)),
         "dropout": [0, 0.2, 0.4, 0.6, 0.8],
-        "recurrent_dropout": [0, 0.2, 0.4, 0.6, 0.8]
+        "recurrent_dropout": [0, 0.2, 0.4, 0.6, 0.8],
+        "num_timesteps": list(range(1, 15, 2)),
     }
 
-    def __init__(self, num_timesteps, features_count, hidden_units=64, dropout=0, recurrent_dropout=0):
+    def __init__(self, num_timesteps, features_count=FEATURES_COUNT, hidden_units=64, dropout=0, recurrent_dropout=0):
+        self.num_timesteps, self.features_count, self.hidden_units, self.dropout, self.recurrent_dropout = \
+            num_timesteps, features_count, hidden_units, dropout, recurrent_dropout
+
         model = Sequential()
         # model.add(Embedding(max_features, 128))
         model.add(LSTM(hidden_units,
@@ -37,6 +41,7 @@ class LSTMForecaster(AbstractForecaster):
         return self.model.predict(X)
 
     def _train(self, data):
+        data.reset_timesteps_per_point(self.num_timesteps)
         X, y = data.all_train_data()
         print("Fit LSTM with X: {} and y: {}".format(np.array(X).shape, np.array(y).shape))
         self.model.fit(X, y, epochs=10, sample_weight=X[:, -1, OPEN], batch_size=32)

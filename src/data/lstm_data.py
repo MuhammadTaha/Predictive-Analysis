@@ -21,13 +21,14 @@ class LSTMData():
         self.update_disk = update_disk
         self.update_cache= update_cache
         export_dir = os.path.join(DATA_DIR, "lstm_extracted")
-        try:
-            assert not update_disk
-            self.load(export_dir)
-        except (FileNotFoundError, AssertionError) as e:
-            self.data_extract = DataExtraction()
-            self.days_data, self.sales, self.batch_info = self.extract()
-            self.save(export_dir)
+        #try:
+        #    assert not update_disk
+        #    self.load(export_dir)
+        #except (FileNotFoundError, AssertionError) as e:
+
+        self.data_extract = DataExtraction()
+        self.days_data, self.sales, self.batch_info = self.extract()
+        #self.save(export_dir)
 
         self.epochs = 0
         self.used_this_epoch = set()
@@ -35,6 +36,12 @@ class LSTMData():
         self.test_point_ids = set()
         self.is_new_epoch = None
         self.features_count = np.array(self.get_point(0)[0]).shape[1]  # of 1st (X,y) pair, take 2nd element of X.shape
+
+    def reset_timesteps_per_point(self, timesteps_per_point):
+        self.num_tsteps = timesteps_per_point
+        self.data_extract = DataExtraction()
+        self.days_data, self.sales, self.batch_info = self.extract()
+        self.X_val, self.y_val = self.all_test_data()
 
     def extract(self):
         print("... Extracting the data")
@@ -99,8 +106,9 @@ class LSTMData():
     def get_point(self, point_id):
         # returns X: (time_steps, #features), Y: scalar
         store_id, day_id = self.batch_info[point_id]
-        x = self.days_data[store_id][day_id - self.num_tsteps + 1:day_id+1]
-        y = self.sales[store_id][day_id]
+        store_pos = np.where(np.array(self.store_ids) == store_id)[0][0]
+        x = self.days_data[store_pos][day_id - self.num_tsteps + 1:day_id+1]
+        y = self.sales[store_pos][day_id]
         return x, y
 
     def read_test_csv(self):
@@ -131,12 +139,10 @@ class LSTMData():
         os.makedirs(path, exist_ok=True)
         np.save(os.path.join(path, "X"), self.days_data)
         np.save(os.path.join(path, "y"), self.sales)
-        np.save(os.path.join(path, "batch_info"), self.batch_info)
 
     def load(self, path):
         self.days_data = np.load(os.path.join(path, "X.npy"))
         self.sales = np.load(os.path.join(path, "y.npy"))
-        self.batch_info = np.load(os.path.join(path, "batch_info.npy"))
 
     def new_epoch(self):
         self.epochs += 1
