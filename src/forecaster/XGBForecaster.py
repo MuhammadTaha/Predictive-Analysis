@@ -9,7 +9,6 @@ except ModuleNotFoundError:
     print("Use relative import without src")
     from .abstract_forecaster import AbstractForecaster
 
-EPS = 0.1
 
 
 class XGBForecaster(AbstractForecaster):
@@ -72,7 +71,7 @@ class XGBForecaster(AbstractForecaster):
 
     @staticmethod
     def rmspe(y, yhat):
-        return np.sqrt(np.mean((yhat - y + EPS) / (y + EPS)) ** 2)
+        return rmspe(y, yhat)
 
     @staticmethod
     def rmspe_xg(yhat, y):

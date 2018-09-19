@@ -89,6 +89,7 @@ class DataExtraction:
         X = rows.drop(['Sales', 'Date'], axis=1).values
         y = rows.Sales.values
         return X, y
+
     def extract_rows_and_days(self, row_ids):
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
         X = rows.drop(['Sales', 'Date'], axis=1).values
