@@ -19,7 +19,7 @@ class SVRForecaster(AbstractForecaster):
 
     def _train(self, data):
         X, y = data.all_train_data()
-        self.svr.fit(X, y[:,0])
+        self.svr.fit(X, y)
 
     def _build(self):
         pass

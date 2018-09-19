@@ -9,12 +9,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def early_stopping(train_step, val_losses, epochs):
-    return train_step < 2000
-
-
-def early_stopping_(train_step, val_losses, epochs):
-    return len(val_losses) - np.argmax(val_losses) < EPOCHS_BEFORE_STOP
 
 
 def weight_variable(shape):

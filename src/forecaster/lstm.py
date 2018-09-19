@@ -4,10 +4,10 @@ except ModuleNotFoundError:
     from .abstract_forecaster import *
 from sklearn.svm import SVR
 import numpy as np
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense, LSTM
 import tensorflow as tf
-
+import uuid
 import pdb
 
 
@@ -33,7 +33,7 @@ class LSTMForecaster(AbstractForecaster):
                        ))
         model.add(Dense(1, activation='linear'))
 
-        model.compile(loss=tf_rmspe, optimizer='adam', metrics=['accuracy', 'mse'])
+        model.compile(loss=tf_rmspe, optimizer='adam')
 
         self.model = model
 
@@ -42,9 +42,39 @@ class LSTMForecaster(AbstractForecaster):
 
     def _train(self, data):
         data.reset_timesteps_per_point(self.num_timesteps)
-        X, y = data.all_train_data()
-        print("Fit LSTM with X: {} and y: {}".format(np.array(X).shape, np.array(y).shape))
-        self.model.fit(X, y, epochs=10, sample_weight=X[:, -1, OPEN], batch_size=32)
+
+        os.makedirs(".temp", exist_ok=True)
+        name = self.__class__.__name__ + str(uuid.uuid4())[:5]
+
+        print("({}) Start training".format(self.__class__.__name__))
+        #  linear regression can't overfit, so as stopping criterion we take that the changes are small
+
+        train_losses, val_losses, val_times = [np.inf], [np.inf], [np.inf]
+        train_step = 0
+
+        while early_stopping(train_step, val_losses, data.epochs):  # no improvement in the last 10 epochs
+            X, y = data.next_train_batch()
+            # run train step
+            train_loss = self.model.train_on_batch(X, y, sample_weight=X[:, -1, OPEN])
+
+            #  logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
+            print("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
+            train_losses.append(train_loss)
+
+            if data.is_new_epoch or train_step % 100 == 0:
+                val_loss = self.model.evaluate(data.X_val, data.y_val, sample_weight=data.X_val[:, -1, OPEN])
+                val_losses.append(val_loss)
+
+                if val_loss == min(val_losses[1:]):
+                    self.save_model(".temp/{}_params".format(name))
+                    print("saved")
+
+                val_times.append(train_step)
+                print("({}) Step {}: Val loss {}".format(self.__class__.__name__, train_step, val_loss))
+            train_step += 1
+
+        self.restore_model(".temp/{}_params".format(name))
+        print("({}) Finished with val loss {}".format(self.__class__.__name__, min(val_losses)))
 
     def _build(self):
         pass
@@ -53,14 +83,21 @@ class LSTMForecaster(AbstractForecaster):
         prediction = self.predict(X)
         return rmspe(y, prediction)
 
+    def save_model(self, path):
+        os.makedirs(path, exist_ok=True)
+        self.model.save_weights(os.path.join(path, 'model.h5'))
+
+    def restore_model(self, path):
+        self.model.load_weights(os.path.join(path, 'model.h5'))
+
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        params = self.model.get_params()
-        joblib.dump(params, os.path.join(MODEL_DIR, file_name))
-        return os.path.join(MODEL_DIR, file_name)
+        path = os.path.join(MODEL_DIR, file_name)
+        self.restore_model(path)
+        return path
 
     @staticmethod
     def load_model(file_name):
         lstm = LSTM()
-        lstm.model.set_params(joblib.load(os.path.join(MODEL_DIR, file_name)))
+        lstm.restore_model(os.path.join(MODEL_DIR, file_name))
         return lstm

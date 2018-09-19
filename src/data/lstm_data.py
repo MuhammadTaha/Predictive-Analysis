@@ -27,7 +27,8 @@ class LSTMData():
         #except (FileNotFoundError, AssertionError) as e:
 
         self.data_extract = DataExtraction()
-        self.days_data, self.sales, self.batch_info = self.extract()
+        self.days_data, self.sales, self.store_days = self.extract()
+        self.batch_info = self.compute_batch_info()
         #self.save(export_dir)
 
         self.epochs = 0
@@ -37,10 +38,19 @@ class LSTMData():
         self.is_new_epoch = None
         self.features_count = np.array(self.get_point(0)[0]).shape[1]  # of 1st (X,y) pair, take 2nd element of X.shape
 
+    def compute_batch_info(self):
+        batch_info = []
+        for store_id, days in zip(self.store_ids, self.store_days):
+            batch_info += [(store_id, day_id) for day_id, _ in enumerate(days)
+                          if day_id > self.num_tsteps and np.all(np.array(days[day_id - self.num_tsteps + 2:day_id + 1] \
+                                                            - np.array(days[day_id - self.num_tsteps + 1:day_id]))
+                                                            == np.ones(self.num_tsteps - 1))]
+        return batch_info
+
+
     def reset_timesteps_per_point(self, timesteps_per_point):
         self.num_tsteps = timesteps_per_point
-        self.data_extract = DataExtraction()
-        self.days_data, self.sales, self.batch_info = self.extract()
+        self.batch_info = self.compute_batch_info()
         self.X_val, self.y_val = self.all_test_data()
 
     def extract(self):
@@ -50,7 +60,7 @@ class LSTMData():
         # Y: store_id -> day_id -> sale # ordered accordingly
         # batch_info: batch_id -> (store_id, day_id)
 
-        X, Y, batch_info = [], [], []
+        X, Y, store_days = [], [], []
 
         # generate all batches
         df = self.data_extract.train
@@ -59,12 +69,12 @@ class LSTMData():
             self.store_ids = [2, 3, 90]
 
         for store_id in self.store_ids:
-            store_data, store_sales, new_batch_info = self.extract_store(store_id)
+            store_data, store_sales, days = self.extract_store(store_id)
             X.append(store_data)
             Y.append(store_sales)
-            batch_info += new_batch_info
+            store_days.append(days)
 
-        return X, Y, batch_info
+        return X, Y, store_days
 
     def extract_store(self, store_id):
         # returns: store_data, store_sales, batch_info
@@ -88,7 +98,7 @@ class LSTMData():
                                 == np.ones(self.num_tsteps-1))
                     ]
 
-        return store_data, store_sales, batch_info
+        return store_data, store_sales, days
 
     def load_cached_store(self, path):
         assert not self.update_cache
