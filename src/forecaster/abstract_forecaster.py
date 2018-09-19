@@ -37,11 +37,11 @@ def tf_rmspe(sales, prediction):
     ), axis=1))
 
 
-def early_stopping(train_step, val_losses, epochs):
+def early_stopping_debug(train_step, val_losses, epochs):
     return train_step < 2000
 
 
-def early_stopping_(train_step, val_losses, epochs):
+def early_stopping(train_step, val_losses, epochs):
     return len(val_losses) - np.argmax(val_losses) < EPOCHS_BEFORE_STOP
 
 

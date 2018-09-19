@@ -154,9 +154,13 @@ def test_lstm_data():
     print("score after training", lstm.score(data.X_val, data.y_val))
 
 
+def prepare_cluster():
+    data = LSTMData(update_disk=True)
+    data = FeedForwardData()
 
 def main():
-    test_lstm_data()
+    prepare_cluster()
+    #  test_lstm_data()
     #  d = Data()
     #  choose the methods to try here
     #  time_series_example()
