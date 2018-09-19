@@ -1,13 +1,9 @@
-import pandas as pd
-import zipfile
-import os
-import tensorflow as tf
-import numpy as np
-import datetime
-import random
-from forecaster import AbstractForecaster
-
 import pdb
+import zipfile
+
+import numpy as np
+import os
+import pandas as pd
 
 """
 - unzips /data/data.zip if not done yet
@@ -20,6 +16,7 @@ import pdb
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
 DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
+
 
 class DataExtraction:
     def __init__(self, data_dir=DATA_DIR, toy=False, keep_zero_sales=False):
@@ -40,37 +37,65 @@ class DataExtraction:
 
         # load into pandas
         self.store = pd.read_csv(data_dir + "/store.csv")
-        self.final_test = pd.read_csv(data_dir + "/test.csv")
-        self.train = pd.read_csv(data_dir + "/train.csv")
+        self.final_test = pd.read_csv(data_dir + "/test.csv", parse_dates=['Date'], )
+        self.train = pd.read_csv(data_dir + "/train.csv", parse_dates=['Date'], )
+
+        self._competition_distance_median = self.store['CompetitionDistance'].median()
 
         if toy:
             self.train = self.train.loc[self.train.Store < 3]
 
         # clean stores with no sales and closed
 
-        #if not keep_zero_sales:
+        # if not keep_zero_sales:
         #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
+
+
+        self.prepare_data_for_extraction()
+        self.apply_feature_transformation()
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
         self.date_keys = sorted(self.train.Date.unique())
-
         self.features_count = len(self._extract_row(1))
+
+    def prepare_data_for_extraction(self):
+        # Dropping features with high missing values percentage
+        self.store.drop(['CompetitionOpenSinceMonth', 'CompetitionOpenSinceYear', 'Promo2SinceWeek',
+                         'Promo2SinceYear', 'PromoInterval'], axis=1, inplace=True)
+        # replace missing values by median
+        self.store.CompetitionDistance.fillna(self._competition_distance_median, inplace=True)
+
+        # remove stores that's not open
+        self.train = self.train[self.train['Open'] != 0]
+        self.train = self.train.drop('Open', axis=1)
+
+        # remove entries with zero sales
+        self.train = self.train[self.train['Sales'] != 0]
+
+        # add dates information
+        self.train['Year'] = self.train.Date.dt.year
+        self.train['Month'] = self.train.Date.dt.month
+        self.train['Day'] = self.train.Date.dt.day
+        self.train['WeekOfYear'] = self.train.Date.dt.weekofyear
+        self.train.reset_index(inplace=True)
 
     def _extract_label(self, row_id):
         #  extracts the sales from the specified row
         return [self.train.iloc[row_id]["Sales"]]
 
     def _extract_rows(self, row_ids):
-        X = np.array([self._extract_row(i) for i in row_ids])
-        y = np.array([self._extract_label(i) for i in row_ids])
+        rows = self.data.iloc[row_ids].drop(['index'], axis=1)
+        X = rows.drop(['Sales', 'Date'], axis=1).values
+        y = rows.Sales.values
         return X, y
 
     def extract_rows_and_days(self, row_ids):
-        X = np.array([self._extract_row(i) for i in row_ids])
-        y = np.array([self._extract_label(i) for i in row_ids])
-        start_date = self.str_to_date(self.train.iloc[-1].Date)
-        days = np.array([(self.str_to_date(self.train.iloc[row_id].Date) - start_date).days for row_id in row_ids])
+        rows = self.data.iloc[row_ids].drop(['index'], axis=1)
+        X = rows.drop(['Sales', 'Date'], axis=1).values
+        y = rows.Sales.values
+        start_date = self.data.iloc[-1].Date
+        days = rows.Date.apply(lambda x: (x - start_date).days).values
         return days, X, y
 
     def _extract_row(self, row_id):
@@ -113,10 +138,9 @@ class DataExtraction:
             Store Type	                One hot 4
             Assortment	                One hot 3
             CompetitionDistance	        float
-            CompetitionOpenSinceDays	uint
-            PromoSinceDays	            uint if participating in promo, else -1
-            DaysSinceInterval	        uint if participating in promo, else -1
-
+            Promo2                      {0,1}
+            Store                       int
+            
             DayOfWeek                   One hot 7
             Open                        {0,1}
             Promo                       {0,1}
@@ -129,6 +153,48 @@ class DataExtraction:
             print(row_id)
             pdb.set_trace()
         return self._extract_loaded_row(row)
+
+    def apply_feature_transformation(self):
+        #TODO put the one hot mapping again
+        abcd = {
+            "a": 0,
+            "b": 1,
+            "c": 2,
+            "d": 3
+        }
+        abc = {
+            "a": 0,
+            "b": 1,
+            "c": 2
+        }
+
+        self.data = pd.merge(self.train, self.store, how='left', on='Store')
+        self.data.StoreType = self.data.StoreType.apply(lambda x: abcd[x])
+        self.data.Assortment = self.data.Assortment.apply(lambda x: abc[x])
+        # self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
+        self.data.StateHoliday = self.data.StateHoliday.apply(lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
+        self.data.Sales = self.data.Sales.apply(lambda x: np.log(x))
+        #
+        # adding avg sales to data frame
+        sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
+        sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
+        sales_avg = sales_avg.reset_index()
+        self.data['sales_key'] = self.data['Year'].map(str) + self.data['Month'].map(str) + self.data['Store'].map(str)
+        sales_avg['sales_key'] = sales_avg['Year'].map(str) + sales_avg['Month'].map(str) + sales_avg['Store'].map(str)
+        sales_avg = sales_avg.drop(['Year', 'Month', 'Store'], axis=1)
+        self.data = pd.merge(self.data, sales_avg, how='left', on=('sales_key'))
+        #
+        # adding avg customers to data frame
+        cust = self.data[['Year', 'Month', 'Store', 'Customers']].groupby(['Year', 'Month', 'Store']).mean()
+        cust = cust.rename(columns={'Customers': 'AvgCustomer'})
+        cust = cust.reset_index()
+        self.data['cust_key'] = self.data['Year'].map(str) + self.data['Month'].map(str) + self.data['Store'].map(str)
+        cust['cust_key'] = cust['Year'].map(str) + cust['Month'].map(str) + cust['Store'].map(str)
+        self.data = self.data.drop('Customers', axis=1)  # drop extra columns
+        cust = cust.drop(['Year', 'Month', 'Store'], axis=1)
+        #
+        self.data = pd.merge(self.data, cust, how="left", on=('cust_key'))
+        self.data = self.data.drop(['cust_key', 'sales_key'], axis=1)
 
     def _extract_loaded_row(self, row):
         abcd = {
@@ -146,102 +212,44 @@ class DataExtraction:
         store_id = row["Store"]
         store = self.store.iloc[store_id - 1]
 
-        curr_date = self.str_to_date(row["Date"])
-
+        # store features
         store_type = abcd[store["StoreType"]]
         assortment = abc[store["Assortment"]]
-        competition_distance = self._competition_distance(store["CompetitionDistance"])
-        competition_open = self._competition_open(store, curr_date)
-        promo_since_days = self._promo_since_days(store, curr_date)
-        days_since_interval = self._promo_interval_since_days(store, curr_date) if promo_since_days > 0 else -1
+        competition_distance = store["CompetitionDistance"]
 
         day_of_week = np.eye(7)[row["DayOfWeek"] - 1]
-        open = row["Open"]
         promo = row["Promo"]
         state_holiday = row["StateHoliday"]
         if state_holiday not in abcd.keys(): state_holiday = "d"
         state_holiday = abcd[state_holiday]
         school_holiday = row["SchoolHoliday"]
 
+        year, month, day, WeekOfYear = row.Year, row.Month, row.Day, row.WeekOfYear
+
         weekday_store_avg = self._weekday_store_avg(row)
         week_of_year_avg = self._week_of_year_avg(row)
-
-        # features = store_type + assortment + [competition_distance, competition_open, promo_since_days,
-        #          days_since_interval] + day_of_week + [open, promo] + state_holiday + [school_holiday]
-        features = np.concatenate((store_type, assortment, [competition_distance, competition_open, promo_since_days,
-                                                            days_since_interval], day_of_week, [open, promo],
-                                   state_holiday, [school_holiday, weekday_store_avg, week_of_year_avg]))
+        month_store_avg = self._month_store_avg(row)
+        promo2 = store['Promo2']
+        features = np.concatenate(
+            (store_type, assortment, [competition_distance, promo2], day_of_week, [promo], state_holiday,
+             [school_holiday, np.log(weekday_store_avg), np.log(week_of_year_avg), year, month, day, WeekOfYear,
+              np.log(month_store_avg)]))
         return features
 
-    def str_to_date(self, date_str):
-        return datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    def _month_store_avg(self, row):
+        avg = self.train.Sales[
+            (self.train.Store == row.Store) & (self.train.Year == row.Year) & (self.train.Month == row.Month)].mean()
+        return np.log(avg) if avg is not np.isnan(avg) else 0
 
     def _weekday_store_avg(self, row):
-        if row["Open"] == 0: return 0
-
-        weekday = row["DayOfWeek"]
-        store_id = row["Store"]
-        avg = np.mean(self.train.loc[(self.train.Store == store_id)
-                                       & (self.train.DayOfWeek == weekday)
-                                       & (self.train.Open == 1)]["Sales"])
-
-        return avg if avg is not np.isnan(avg) else 0
+        avg = self.train.Sales[(self.train.Store == row.Store) & (self.train.Year == row.Year) & (
+            self.train.DayOfWeek == row.DayOfWeek)].mean()
+        return np.log(avg) if avg is not np.isnan(avg) else 0
 
     def _week_of_year_avg(self, row):
-        store_id = row["Store"]
-
-        def get_dates():
-            date = self.str_to_date(row["Date"])
-            dates = []
-            for offset in range(-3, 4):
-                mm_dd = (date +  datetime.timedelta(days = offset)).isoformat()[5:] # isoformat is "YYYY-MM-DD"
-
-                for YYYY in ["2013", "2014", "2015"]:
-                    dates.append(YYYY + "-" + mm_dd)
-            return dates
-
-        dates = get_dates()
-
-        avg = np.mean(self.train.loc[(self.train.Store == store_id)
-                      & self.train.Date.isin(dates)
-                      & (self.train.Open == 1)]["Sales"])
-
-        return avg if avg is not np.isnan(avg) else 0
-
-    def _competition_distance(self, value):
-        # handles missing values for CompetitionDistance
-        # if value is not None and not np.isnan(value): return value
-        if not self._values_missing(value): return value
-        return 100  # TODO
-
-    def _competition_open(self, store, curr_date):
-        # calculates the days since competition is open, handles missing values
-        month, year = store["CompetitionOpenSinceMonth"], store["CompetitionOpenSinceYear"]
-
-        if self._values_missing(month, year):
-            return 100  # TODO
-
-        date = datetime.date(day=1, month=int(month), year=int(year))
-        return (curr_date - date).days
-
-    def _promo_since_days(self, store, curr_date):
-        if store["Promo2"] == 0: return -1
-        week, year = store["Promo2SinceWeek"], store["Promo2SinceYear"]
-        if self._values_missing(week, year):
-            print("unexpected null values")
-            pdb.set_trace()
-
-        date = datetime.date(day=1, month=1, year=int(year)) + datetime.timedelta(weeks=int(week))
-        return max((curr_date - date).days, -1)  # if at curr_date the store wasn't participating, return -1
-
-    def _promo_interval_since_days(self, store, curr_date):
-        interval_str = store["PromoInterval"]
-        starting = interval_str.split(",")
-        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
-        starting = [months.index(i) + 1 for i in starting]
-        started = [datetime.date(day=1, month=i, year=curr_date.year) for i in starting if i <= curr_date.month] + \
-                  [datetime.date(day=1, month=i, year=curr_date.year - 1) for i in starting if i > curr_date.month]
-        return min([curr_date - i for i in started]).days
+        avg = self.train.Sales[(self.train.Store == row.Store) & (self.train.Year == row.Year) & (
+            self.train.WeekOfYear == row.WeekOfYear)].mean()
+        return np.log(avg) if avg is not np.isnan(avg) else 0
 
     def _values_missing(self, *args):
         return any([a is None for a in args]) or np.any(np.isnan(args))
