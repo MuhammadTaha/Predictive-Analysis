@@ -7,7 +7,7 @@ import uuid
 import numpy as np
 from keras.layers import Dense, LSTM
 from keras.models import Sequential
-
+from src.data.feature_enum import FEATURE_COUNT
 
 class LSTMForecaster(AbstractForecaster):
     params_grid = {
@@ -17,7 +17,7 @@ class LSTMForecaster(AbstractForecaster):
         "num_timesteps": list(range(1, 15, 2)),
     }
 
-    def __init__(self, num_timesteps, features_count, hidden_units=64, dropout=0, recurrent_dropout=0):
+    def __init__(self, num_timesteps, features_count=FEATURE_COUNT, hidden_units=64, dropout=0, recurrent_dropout=0):
         self.num_timesteps, self.features_count, self.hidden_units, self.dropout, self.recurrent_dropout = \
             num_timesteps, features_count, hidden_units, dropout, recurrent_dropout
 

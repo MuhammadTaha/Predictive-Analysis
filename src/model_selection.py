@@ -14,7 +14,7 @@ import pdb
 from src.forecaster import lstm
 from src.forecaster.XGBForecaster import XGBForecaster
 
-MODELS = [XGBForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+MODELS = [lstm.LSTMForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
