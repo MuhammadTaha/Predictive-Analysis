@@ -3,13 +3,18 @@ import numpy as np
 import json
 import os
 import random
-try:
-    from .forecaster import *
-except:
-    from forecaster import *
+import tensorflow as tf
+
+from src.data import FeedForwardData
+
+from src.data.lstm_data import LSTMData
+
 import pdb
 
-MODELS = [LSTMForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+from src.forecaster import lstm
+from src.forecaster.XGBForecaster import XGBForecaster
+
+MODELS = [XGBForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -20,7 +25,7 @@ lstm_data = LSTMData(is_debug=True, update_disk=True, timesteps_per_point=10)
 NUM_POINTS_FOR_ESTIMATE = 2000 # 50000
 
 def estimate_score(model):
-    data = lstm_data if isinstance(model, LSTMForecaster) else feed_forward_data
+    data = lstm_data if isinstance(model, lstm.LSTMForecaster) else feed_forward_data
     # use the first 1000 batches only
 
     points = list(range(NUM_POINTS_FOR_ESTIMATE))
@@ -130,7 +135,7 @@ def model_selection(extend_existing_results=True):
 
 def train_best_model():
     model = model_selection()
-    data = lstm_data if isinstance(model, LSTMForecaster) else feed_forward_data
+    data = lstm_data if isinstance(model, lstm.LSTMForecaster) else feed_forward_data
     batches = np.random.permutation(data.batches_X.shape[0])
     split = int(0.75*len(batches))
     data.train_test_split(set(batches[:split]), set(batches[split:]))
@@ -148,5 +153,5 @@ def train_best_model():
         pdb.set_trace()
 
 
-def main():
+if __name__ == '__main__':
     model_selection(False)

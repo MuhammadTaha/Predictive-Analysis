@@ -2,21 +2,11 @@
 This is for tries that should not ent up in the actual app
 """
 
-from visualize_predictions import visualize_predictions
-import pdb
-import tensorflow as tf
-from forecaster import *
-from data import *
-
-try:
-    from src.data import *
-    from src.forecaster import *
-except ModuleNotFoundError:
-    print("Use relative import without src")
-    from data import *
-    from forecaster import *
-
-
+from src.data import *
+from src.forecaster import *
+from src.visualize_predictions import visualize_predictions
+from src.data.lstm_data import LSTMData
+from src.data.feedforward_data import FeedForwardData
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -127,7 +117,7 @@ def try_model_wo_sess(model_type, plot_dir=None):
     model.fit(data)
     print("score:", model.score(data.X_val, data.y_val))
     p = model.predict(data.X_val)
-    diff = np.array([p, data.y_val])[:,:,0].T
+    diff = np.array([p, data.y_val])[:, :, 0].T
     print("diff", diff.shape)
 
     visualize_predictions(model, plot_dir)
@@ -144,10 +134,10 @@ def test_lstm_data():
 
     lstm = LSTMForecaster(num_timesteps=data.num_tsteps, features_count=data.features_count)
     lstm.trained = True
-    #print("prediction before training", lstm.predict(data.X_val))
+    # print("prediction before training", lstm.predict(data.X_val))
     lstm.fit(data)
     p = lstm.predict(data.X_val)
-    closed = np.where(data.X_val[:,-1,OPEN]==0)[0]
+    closed = np.where(data.X_val[:, -1, OPEN] == 0)[0]
     if np.any(p[closed] > 0):
         print(">0 where store is closed")
 
@@ -155,10 +145,11 @@ def test_lstm_data():
 
 
 def prepare_cluster():
-    data = LSTMData(update_disk=True)
-    data = FeedForwardData()
+    LSTMData(update_disk=True)
+    FeedForwardData()
 
-def main():
+
+if __name__ == '__main__':
     prepare_cluster()
     #  test_lstm_data()
     #  d = Data()
@@ -173,4 +164,3 @@ def main():
     #  feedforwardnn(train_new=True)
     #  naive_classifier()
     #  try_model_wo_sess(NaiveForecaster2)
-

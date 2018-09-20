@@ -1,7 +1,4 @@
-try:
-    from data_extraction import *
-except ModuleNotFoundError:
-    from .data_extraction import *
+from src.data.data_extraction import *
 import numpy as np
 import os
 import random
@@ -188,3 +185,7 @@ class LSTMData():
             Y.append(y)
 
         return self.check(X, Y)
+
+
+if __name__ == '__main__':
+    LSTMData()

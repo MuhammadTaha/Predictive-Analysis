@@ -57,7 +57,9 @@ class DataExtraction:
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
         self.date_keys = sorted(self.train.Date.unique())
-        self.features_count = len(self._extract_row(1))
+        self.features_count = self._extract_rows([1])[0].shape[1]
+        self.p_val = 0.2
+        self.p_train = 0.8
 
     def prepare_data_for_extraction(self):
         # Dropping features with high missing values percentage
@@ -85,6 +87,7 @@ class DataExtraction:
         return [self.train.iloc[row_id]["Sales"]]
 
     def _extract_rows(self, row_ids):
+        row_ids = list(row_ids)
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
         X = rows.drop(['Sales', 'Date'], axis=1).values
         y = rows.Sales.values

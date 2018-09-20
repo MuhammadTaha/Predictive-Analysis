@@ -1,14 +1,12 @@
 try:
-    from src.forecaster.abstract_forecaster import *
-except ModuleNotFoundError:
     from .abstract_forecaster import *
-from sklearn.svm import SVR
-import numpy as np
-from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM
-import tensorflow as tf
+except ModuleNotFoundError:
+    from src.forecaster.abstract_forecaster import *
 import uuid
-import pdb
+
+import numpy as np
+from keras.layers import Dense, LSTM
+from keras.models import Sequential
 
 
 class LSTMForecaster(AbstractForecaster):
@@ -19,7 +17,7 @@ class LSTMForecaster(AbstractForecaster):
         "num_timesteps": list(range(1, 15, 2)),
     }
 
-    def __init__(self, num_timesteps, features_count=FEATURES_COUNT, hidden_units=64, dropout=0, recurrent_dropout=0):
+    def __init__(self, num_timesteps, features_count, hidden_units=64, dropout=0, recurrent_dropout=0):
         self.num_timesteps, self.features_count, self.hidden_units, self.dropout, self.recurrent_dropout = \
             num_timesteps, features_count, hidden_units, dropout, recurrent_dropout
 
