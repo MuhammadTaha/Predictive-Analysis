@@ -1,4 +1,7 @@
-from src.data.data_extraction import *
+try:
+    from src.data.data_extraction import *
+except:
+    from .data_extraction import *
 import numpy as np
 import os
 import random

@@ -5,16 +5,19 @@ import os
 import random
 import tensorflow as tf
 
-from src.data import FeedForwardData
-
-from src.data.lstm_data import LSTMData
-
 import pdb
 
-from src.forecaster import lstm
-from src.forecaster.XGBForecaster import XGBForecaster
+try:
+    from src.forecaster import lstm
+    from src.forecaster.XGBForecaster import XGBForecaster
+    from src.data import FeedForwardData
+    from src.data.lstm_data import LSTMData
+except:
+    from forecaster import *
+    from data import *
 
-MODELS = [XGBForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+
+MODELS = [LSTMForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -24,8 +27,13 @@ lstm_data = LSTMData(is_debug=True, update_disk=True, timesteps_per_point=10)
 
 NUM_POINTS_FOR_ESTIMATE = 2000 # 50000
 
-def estimate_score(model):
-    data = lstm_data if isinstance(model, lstm.LSTMForecaster) else feed_forward_data
+def estimate_score(model_class, params):
+    data = lstm_data if model_class == lstm.LSTMForecaster else feed_forward_data
+    try:
+        model = model_class(features_count=data.features_count, **params)
+    except Exception as e:
+        print(e)
+        model = model_class(**params)
     # use the first 1000 batches only
 
     points = list(range(NUM_POINTS_FOR_ESTIMATE))
@@ -72,8 +80,8 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
         while params in tried:
             params = {key: random_choice(key) for key in params_choices.keys()}
         print("{} : try {}".format(model_class.__name__, params))
-        model = model_class(**params)
-        score = estimate_score(model)
+
+        score = estimate_score(model_class, params)
         result.append({"params": params, "score": score})
         if score <= best_score:
             best_params, best_score = params, score
@@ -153,5 +161,8 @@ def train_best_model():
         pdb.set_trace()
 
 
-if __name__ == '__main__':
+def main(): # please don't delete this, this is the entrypoint for main.py
     model_selection(False)
+
+if __name__ == '__main__':
+    main()

@@ -1,12 +1,16 @@
 """
 This is for tries that should not ent up in the actual app
 """
-
-from src.data import *
-from src.forecaster import *
-from src.visualize_predictions import visualize_predictions
-from src.data.lstm_data import LSTMData
-from src.data.feedforward_data import FeedForwardData
+try:
+    from src.data import *
+    from src.forecaster import *
+    from src.visualize_predictions import visualize_predictions
+    from src.data.lstm_data import LSTMData
+    from src.data.feedforward_data import FeedForwardData
+except:
+    from data import *
+    from forecaster import *
+    from visualize_predictions import visualize_predictions
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
 
