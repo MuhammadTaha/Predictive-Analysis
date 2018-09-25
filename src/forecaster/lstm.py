@@ -53,14 +53,14 @@ class LSTMForecaster(AbstractForecaster):
         while early_stopping(train_step, val_losses, data.epochs):  # no improvement in the last 10 epochs
             X, y = data.next_train_batch()
             # run train step
-            train_loss = self.model.train_on_batch(X, y, sample_weight=X[:, -1, OPEN])
+            train_loss = self.model.train_on_batch(X, y, sample_weight=X[:, -1])
 
             #  logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
             print("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
             train_losses.append(train_loss)
 
             if data.is_new_epoch or train_step % 100 == 0:
-                val_loss = self.model.evaluate(data.X_val, data.y_val, sample_weight=data.X_val[:, -1, OPEN])
+                val_loss = self.model.evaluate(data.X_val, data.y_val, sample_weight=data.X_val[:, -1])
                 val_losses.append(val_loss)
 
                 if val_loss == min(val_losses[1:]):

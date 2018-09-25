@@ -15,7 +15,7 @@ class NaiveForecaster(AbstractForecaster):
         self.trained = True
 
     def _decision_function(self, X):
-        return X[:, WEEKDAY_STORE_AVG, None]*X[:, OPEN, None]
+        return X[:, AVG_SALES, None]*X[:, None]
 
     def _train(self, *args, **kwargs):
         return
@@ -38,7 +38,7 @@ class NaiveForecaster2(AbstractForecaster):
         self.trained = True
 
     def _decision_function(self, X):
-        return X[:, WEEK_OF_YEAR_AVG, None]*X[:, OPEN, None]
+        return X[:, AVG_SALES, None]*X[:,None]
 
     def _train(self, *args, **kwargs):
         return

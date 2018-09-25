@@ -1,20 +1,23 @@
-from data import *
-import numpy as np
 import json
+import pdb
+
+import numpy as np
 import os
 import random
 import tensorflow as tf
 
-from src.data import FeedForwardData
+try:
+    from src.forecaster import lstm, FeedForwardNN1, LinearRegressor, SVRForecaster, NaiveForecaster
+    from src.forecaster.XGBForecaster import XGBForecaster
+    from src.data import FeedForwardData
+    from src.data.lstm_data import LSTMData
+except:
+    from forecaster import *
+    from data import *
 
-from src.data.lstm_data import LSTMData
-
-import pdb
-
-from src.forecaster import lstm
-from src.forecaster.XGBForecaster import XGBForecaster
-
-MODELS = [lstm.LSTMForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+MODELS = [XGBForecaster, FeedForwardNN1,
+          LinearRegressor, SVRForecaster,
+          NaiveForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -22,15 +25,21 @@ os.makedirs(RESULT_DIR, exist_ok=True)
 feed_forward_data = FeedForwardData()
 lstm_data = LSTMData(is_debug=True, update_disk=True, timesteps_per_point=10)
 
-NUM_POINTS_FOR_ESTIMATE = 2000 # 50000
+NUM_POINTS_FOR_ESTIMATE = 2000  # 50000
 
-def estimate_score(model):
-    data = lstm_data if isinstance(model, lstm.LSTMForecaster) else feed_forward_data
+
+def estimate_score(model_class, params):
+    data = lstm_data if model_class == lstm.LSTMForecaster else feed_forward_data
+    try:
+        model = model_class(features_count=data.features_count, **params)
+    except Exception as e:
+        print(e)
+        model = model_class(**params)
     # use the first 1000 batches only
 
     points = list(range(NUM_POINTS_FOR_ESTIMATE))
     points = np.random.permutation(points)
-    split = int(0.7*len(points))
+    split = int(0.7 * len(points))
 
     data.train_test_split(set(points[:split]), set(points[split:]))
 
@@ -53,7 +62,7 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
     Creates a <model_class.__name__>-hyperparameters.json :
     [ {"params": <params>, "score": <score>}, ...]
     """
-    params_choices  = model_class.params_grid
+    params_choices = model_class.params_grid
 
     # try different combinations
     # this is a random search in the paramater space, inspired by
@@ -62,7 +71,8 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
     def random_choice(key):
         if isinstance(params_choices[key], list):
             return random.choice(params_choices[key])
-        assert isinstance(params_choices[key], np.ndarray), "{} has for param of unknown type for {}".format(model_class.__name__, key)
+        assert isinstance(params_choices[key], np.ndarray), "{} has for param of unknown type for {}".format(
+            model_class.__name__, key)
         return np.random.choice(params_choices[key])
 
     result, best_params, best_score, tried = [], {}, np.inf, []
@@ -72,8 +82,8 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
         while params in tried:
             params = {key: random_choice(key) for key in params_choices.keys()}
         print("{} : try {}".format(model_class.__name__, params))
-        model = model_class(**params)
-        score = estimate_score(model)
+
+        score = estimate_score(model_class, params)
         result.append({"params": params, "score": score})
         if score <= best_score:
             best_params, best_score = params, score
@@ -96,7 +106,7 @@ def model_selection(extend_existing_results=True):
     :return the best untrained model:
     """
     result_path = os.path.join(RESULT_DIR, 'model_selection.json')
-    try: # load old results and don't run modelselection for them again
+    try:  # load old results and don't run modelselection for them again
         assert extend_existing_results
         with open(result_path, "r") as f:
             result = json.load(f)
@@ -125,10 +135,10 @@ def model_selection(extend_existing_results=True):
 
     # initialize the best model
     best_score = max([class_result["score"] for class_result in result.values()])
-    best_class, best_params = [(class_name, result[class_name]["hyper_parameters"] )
-                                for class_name in result.keys()
-                                if result[class_name]["score"] == best_score][0]
-    model_class = [model_class for model_class in MODELS if model_class.__name__==best_class][0]
+    best_class, best_params = [(class_name, result[class_name]["hyper_parameters"])
+                               for class_name in result.keys()
+                               if result[class_name]["score"] == best_score][0]
+    model_class = [model_class for model_class in MODELS if model_class.__name__ == best_class][0]
     model = model_class(**best_params)
     return model
 
@@ -137,7 +147,7 @@ def train_best_model():
     model = model_selection()
     data = lstm_data if isinstance(model, lstm.LSTMForecaster) else feed_forward_data
     batches = np.random.permutation(data.batches_X.shape[0])
-    split = int(0.75*len(batches))
+    split = int(0.75 * len(batches))
     data.train_test_split(set(batches[:split]), set(batches[split:]))
     model.fit(data)
     print("Save the best trained model")
@@ -153,5 +163,9 @@ def train_best_model():
         pdb.set_trace()
 
 
-if __name__ == '__main__':
+def main():  # please don't delete this, this is the entrypoint for main.py
     model_selection(False)
+
+
+if __name__ == '__main__':
+    main()

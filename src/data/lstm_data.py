@@ -1,4 +1,7 @@
-from src.data.data_extraction import *
+try:
+    from src.data.data_extraction import *
+except:
+    from .data_extraction import *
 import numpy as np
 import os
 import random
@@ -112,7 +115,10 @@ class LSTMData():
 
     def get_point(self, point_id):
         # returns X: (time_steps, #features), Y: scalar
-        store_id, day_id = self.batch_info[point_id]
+        try:
+            store_id, day_id = self.batch_info[point_id]
+        except IndexError:
+            print(point_id)
         store_pos = np.where(np.array(self.store_ids) == store_id)[0][0]
         x = self.days_data[store_pos][day_id - self.num_tsteps + 1:day_id+1]
         y = self.sales[store_pos][day_id]

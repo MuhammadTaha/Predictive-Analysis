@@ -1,9 +1,9 @@
 try:
     from src.data.timeseries_data import TimeSeriesData
     from src.forecaster import *
-except ModuleNotFoundError:
-    from src.data.timeseries_data import TimeSeriesData
-    from src.forecaster import *
+except:
+    from data.timeseries_data import TimeSeriesData
+    from forecaster import *
 import os
 import numpy as np
 from matplotlib import pyplot as plt

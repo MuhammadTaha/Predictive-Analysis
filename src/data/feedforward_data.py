@@ -1,7 +1,4 @@
-import os
 import random
-
-from sklearn.externals import joblib
 
 try:
     from src.data.data_extraction import DataExtraction, DATA_DIR, DATA_PICKLE_FILE
@@ -18,6 +15,13 @@ class FeedForwardData(DataExtraction):
         self.train_point_ids = set()
         self.test_point_ids = set()
         self.is_new_epoch = None
+
+    def train_test_split(self, train_point_ids, test_point_ids):
+        train_point_ids, test_point_ids = set(train_point_ids), set(test_point_ids)
+        assert len(train_point_ids.intersection(test_point_ids)) == 0
+        self.train_point_ids, self.test_point_ids = train_point_ids, test_point_ids
+        self.new_epoch()
+        self.X_val, self.y_val = self.all_test_data()
 
     def next_train_batch(self, batch_size=50):
         """
@@ -45,10 +49,3 @@ class FeedForwardData(DataExtraction):
         self.used_this_epoch = set()
         self.is_new_epoch = True
         print("START EPOCH", self.epochs)
-
-    def train_test_split(self, train_point_ids, test_point_ids):
-        train_point_ids, test_point_ids = set(train_point_ids), set(test_point_ids)
-        assert len(train_point_ids.intersection(test_point_ids)) == 0
-        self.train_point_ids, self.test_point_ids = train_point_ids, test_point_ids
-        self.new_epoch()
-        self.X_val, self.y_val = self.all_test_data()

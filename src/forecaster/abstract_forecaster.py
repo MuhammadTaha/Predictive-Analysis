@@ -96,10 +96,10 @@ class AbstractForecaster(ABC):
 
         try:
             if len(X.shape) == 2:  # feed forward data
-                assert (y == y*X[:, OPEN, None]).all()
-                filter_open = X[:, OPEN, None]
+                assert (y == y*X[:,  None]).all()
+                filter_open = X[:, None]
             elif len(X.shape) == 3:  # lstm data
-                filter_open = X[:, -1, OPEN, None]
+                filter_open = X[:, -1, None]
             else:
                 raise Warning("X shape is weird")
         except AssertionError:

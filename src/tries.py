@@ -1,12 +1,16 @@
 """
 This is for tries that should not ent up in the actual app
 """
-
-from src.data import *
-from src.forecaster import *
-from src.visualize_predictions import visualize_predictions
-from src.data.lstm_data import LSTMData
-from src.data.feedforward_data import FeedForwardData
+try:
+    from src.data import *
+    from src.forecaster import *
+    from src.visualize_predictions import visualize_predictions
+    from src.data.lstm_data import LSTMData
+    from src.data.feedforward_data import FeedForwardData
+except:
+    from data import *
+    from forecaster import *
+    from visualize_predictions import visualize_predictions
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -137,7 +141,7 @@ def test_lstm_data():
     # print("prediction before training", lstm.predict(data.X_val))
     lstm.fit(data)
     p = lstm.predict(data.X_val)
-    closed = np.where(data.X_val[:, -1, OPEN] == 0)[0]
+    closed = np.where(data.X_val[:, -1] == 0)[0]
     if np.any(p[closed] > 0):
         print(">0 where store is closed")
 
