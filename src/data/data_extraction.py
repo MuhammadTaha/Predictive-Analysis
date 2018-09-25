@@ -53,6 +53,7 @@ class DataExtraction:
 
         self.prepare_data_for_extraction()
         self.apply_feature_transformation()
+        self.apply_feature_transformation_test()
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
@@ -72,6 +73,10 @@ class DataExtraction:
         self.train = self.train[self.train['Open'] != 0]
         self.train = self.train.drop('Open', axis=1)
 
+        # remove stores that't not open test data
+        # self.final_test = self.final_test[self.final_test['Open'] != 0]
+        # self.final_test = self.final_test.drop('Open', axis=1)
+
         # remove entries with zero sales
         self.train = self.train[self.train['Sales'] != 0]
 
@@ -80,7 +85,17 @@ class DataExtraction:
         self.train['Month'] = self.train.Date.dt.month
         self.train['Day'] = self.train.Date.dt.day
         self.train['WeekOfYear'] = self.train.Date.dt.weekofyear
+        self.train.drop('Date', axis=1)
         self.train.reset_index(inplace=True)
+
+        # add dates information test data
+        self.final_test['Year'] = self.final_test.Date.dt.year
+        self.final_test['Month'] = self.final_test.Date.dt.month
+        self.final_test['Day'] = self.final_test.Date.dt.day
+        self.final_test['WeekOfYear'] = self.final_test.Date.dt.weekofyear
+        self.final_test.drop('Id', axis=1)
+        self.final_test.drop('Date', axis=1)
+        self.final_test.reset_index(inplace=True)
 
     def _extract_label(self, row_id):
         #  extracts the sales from the specified row
@@ -158,7 +173,7 @@ class DataExtraction:
         return self._extract_loaded_row(row)
 
     def apply_feature_transformation(self):
-        #TODO put the one hot mapping again
+        # TODO put the one hot mapping again
         abcd = {
             "a": 0,
             "b": 1,
@@ -176,28 +191,71 @@ class DataExtraction:
         self.data.Assortment = self.data.Assortment.apply(lambda x: abc[x])
         # self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
         self.data.StateHoliday = self.data.StateHoliday.apply(lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
-        self.data.Sales = self.data.Sales.apply(lambda x: np.log(x))
+        self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1)
         #
+        # # adding avg sales to data frame
+        # sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
+        # sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
+        # sales_avg = sales_avg.reset_index()
+        # self.data['sales_key'] = self.data['Year'].map(str) + self.data['Month'].map(str) + self.data['Store'].map(str)
+        # sales_avg['sales_key'] = sales_avg['Year'].map(str) + sales_avg['Month'].map(str) + sales_avg['Store'].map(str)
+        # sales_avg = sales_avg.drop(['Year', 'Month', 'Store'], axis=1)
+        # self.data = pd.merge(self.data, sales_avg, how='left', on=('sales_key'))
+        # #
+        # # adding avg customers to data frame
+        # cust = self.data[['Year', 'Month', 'Store', 'Customers']].groupby(['Year', 'Month', 'Store']).mean()
+        # cust = cust.rename(columns={'Customers': 'AvgCustomer'})
+        # cust = cust.reset_index()
+        # self.data['cust_key'] = self.data['Year'].map(str) + self.data['Month'].map(str) + self.data['Store'].map(str)
+        # cust['cust_key'] = cust['Year'].map(str) + cust['Month'].map(str) + cust['Store'].map(str)
+        # self.data = self.data.drop('Customers', axis=1)  # drop extra columns
+        # cust = cust.drop(['Year', 'Month', 'Store'], axis=1)
+        # #
+        # self.data = pd.merge(self.data, cust, how="left", on=('cust_key'))
+        # self.data = self.data.drop(['cust_key', 'sales_key'], axis=1)
+
+    def apply_feature_transformation_test(self):
+        # TODO put the one hot mapping again
+        abcd = {
+            "a": 0,
+            "b": 1,
+            "c": 2,
+            "d": 3
+        }
+        abc = {
+            "a": 0,
+            "b": 1,
+            "c": 2
+        }
+
+        self.final_test = pd.merge(self.final_test, self.store, how='left', on='Store')
+        self.final_test.StoreType = self.final_test.StoreType.apply(lambda x: abcd[x])
+        self.final_test.Assortment = self.final_test.Assortment.apply(lambda x: abc[x])
+        self.final_test.StateHoliday = self.final_test.StateHoliday.apply(
+            lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
+        # self.final_test.Sales = self.final_test.Sales.apply(lambda x: np.log(x) + 1)
         # adding avg sales to data frame
-        sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
-        sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
-        sales_avg = sales_avg.reset_index()
-        self.data['sales_key'] = self.data['Year'].map(str) + self.data['Month'].map(str) + self.data['Store'].map(str)
-        sales_avg['sales_key'] = sales_avg['Year'].map(str) + sales_avg['Month'].map(str) + sales_avg['Store'].map(str)
-        sales_avg = sales_avg.drop(['Year', 'Month', 'Store'], axis=1)
-        self.data = pd.merge(self.data, sales_avg, how='left', on=('sales_key'))
-        #
-        # adding avg customers to data frame
-        cust = self.data[['Year', 'Month', 'Store', 'Customers']].groupby(['Year', 'Month', 'Store']).mean()
-        cust = cust.rename(columns={'Customers': 'AvgCustomer'})
-        cust = cust.reset_index()
-        self.data['cust_key'] = self.data['Year'].map(str) + self.data['Month'].map(str) + self.data['Store'].map(str)
-        cust['cust_key'] = cust['Year'].map(str) + cust['Month'].map(str) + cust['Store'].map(str)
-        self.data = self.data.drop('Customers', axis=1)  # drop extra columns
-        cust = cust.drop(['Year', 'Month', 'Store'], axis=1)
-        #
-        self.data = pd.merge(self.data, cust, how="left", on=('cust_key'))
-        self.data = self.data.drop(['cust_key', 'sales_key'], axis=1)
+        # sales_avg = self.final_test[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
+        # sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
+        # sales_avg = sales_avg.reset_index()
+        # self.final_test['sales_key'] = self.final_test['Year'].map(str) + self.final_test['Month'].map(str) + \
+        #                                self.final_test['Store'].map(str)
+        # sales_avg['sales_key'] = sales_avg['Year'].map(str) + sales_avg['Month'].map(str) + sales_avg['Store'].map(str)
+        # sales_avg = sales_avg.drop(['Year', 'Month', 'Store'], axis=1)
+        # self.final_test = pd.merge(self.final_test, sales_avg, how='left', on=('sales_key'))
+        # #
+        # # adding avg customers to data frame
+        # cust = self.final_test[['Year', 'Month', 'Store', 'Customers']].groupby(['Year', 'Month', 'Store']).mean()
+        # cust = cust.rename(columns={'Customers': 'AvgCustomer'})
+        # cust = cust.reset_index()
+        # self.final_test['cust_key'] = self.final_test['Year'].map(str) + self.final_test['Month'].map(str) + \
+        #                               self.final_test['Store'].map(str)
+        # cust['cust_key'] = cust['Year'].map(str) + cust['Month'].map(str) + cust['Store'].map(str)
+        # self.final_test = self.final_test.drop('Customers', axis=1)  # drop extra columns
+        # cust = cust.drop(['Year', 'Month', 'Store'], axis=1)
+        # #
+        # self.final_test = pd.merge(self.final_test, cust, how="left", on=('cust_key'))
+        # self.final_test = self.final_test.drop(['cust_key', 'sales_key'], axis=1)
 
     def _extract_loaded_row(self, row):
         abcd = {

@@ -17,10 +17,13 @@ AVG_SALES = 13
 AVG_CUSTOMER = 14
 FEATURE_COUNT = 15
 
+FEATURES = ['Store', 'DayOfWeek', 'Promo', 'StateHoliday',
+            'SchoolHoliday', 'Year', 'Month', 'Day', 'WeekOfYear', 'StoreType',
+            'Assortment', 'CompetitionDistance', 'Promo2']
+
 abcd = {
     "a": [1, 0, 0, 0],
     "b": [0, 1, 0, 0],
     "c": [0, 0, 1, 0],
     "d": [0, 0, 0, 1]
 }
-
