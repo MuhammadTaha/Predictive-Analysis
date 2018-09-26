@@ -62,7 +62,7 @@ def estimate_score(model_class, params):
     return score
 
 
-def best_hyperparams_and_score(model_class, num_combinations=10):
+def best_hyperparams_and_score(model_class, num_combinations=1):
     """
     Creates a <model_class.__name__>-hyperparameters.json :
     [ {"params": <params>, "score": <score>}, ...]
@@ -144,7 +144,16 @@ def model_selection(extend_existing_results=True):
                                for class_name in result.keys()
                                if result[class_name]["score"] == best_score][0]
     model_class = [model_class for model_class in MODELS if model_class.__name__ == best_class][0]
-    model = model_class(**best_params)
+
+    try:
+        model = model_class(features_count=feed_forward_data.features_count, **best_params)
+    except:
+        try:
+            model = model_class(**best_params)
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+
     return model
 
 
