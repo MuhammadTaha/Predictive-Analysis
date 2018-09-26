@@ -27,6 +27,7 @@ class LSTMData():
         #except (FileNotFoundError, AssertionError) as e:
 
         self.data_extract = DataExtraction()
+        self.open = self.data_extract.open
         self.days_data, self.sales, self.store_days = self.extract()
         self.batch_info = self.compute_batch_info()
         #self.save(export_dir)

@@ -69,7 +69,7 @@ class FeedForward(AbstractForecaster):
 
     def _predict_zero_if_closed(self):
         self.output *= self.input * tf.constant(
-            np.eye(self.input.shape[1])[None, ...]  # e_18 in shape (1 <broadcasts to #samples>, features_count)
+            np.eye(self.input.shape[OPEN])[None, ...]  # e_18 in shape (1 <broadcasts to #samples>, features_count)
             , dtype=tf.float32)
 
     def score(self, X, y):

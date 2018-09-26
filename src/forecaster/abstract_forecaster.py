@@ -23,6 +23,7 @@ EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training i
 
 EPS = 10
 
+OPEN = 4
 
 def rmspe(sales, prediction):
     return np.sqrt(np.mean(np.square(

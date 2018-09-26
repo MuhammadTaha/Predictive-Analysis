@@ -55,6 +55,17 @@ class DataExtraction:
         self.apply_feature_transformation()
         self.apply_feature_transformation_test()
 
+        # check where scalar cols and where list cols (one hot features) are
+        # They will be flattened with the scalar columns first
+        rows = self.data.iloc[[0]].drop(['index'], axis=1)
+        X = rows.drop(['Sales', 'Date'], axis=1).values
+        self.scalar_cols = [id for id in range(X.shape[1]) if not isinstance(X[0,id], (np.ndarray, list,)) ]
+        self.list_cols = [id for id in range(X.shape[1]) if isinstance(X[0,id], (np.ndarray, list,)) ]
+        open = self.data.columns.get_loc("Open")
+        self.open = self.scalar_cols.index(open)
+
+        print("OPEN IS FEATURE ", self.open, "\nGO AND TELL THE MODULS")
+
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
         self.date_keys = sorted(self.train.Date.unique())
@@ -79,18 +90,6 @@ class DataExtraction:
         self.train.drop('Date', axis=1)
         self.train.reset_index(inplace=True)
 
-        # check where scalar cols and where list cols (one hot features) are
-        # They will be flattened with the scalar columns first
-        rows = self.data.iloc[[0]].drop(['index'], axis=1)
-        X = rows.drop(['Sales', 'Date'], axis=1).values
-        self.scalar_cols = [id for id in range(X.shape[1]) if not isinstance(X[0,id], (np.ndarray, list,)) ]
-        self.list_cols = [id for id in range(X.shape[1]) if isinstance(X[0,id], (np.ndarray, list,)) ]
-        open = self.data.columns.indexof("Open")
-        self.open = self.scalar_cols.indexof(open)
-
-        print("OPEN IS FEATURE ", self.open, "\nGO AND TELL THE MODULS")
-        pdb.set_trace()
-
         # add dates information test data
         self.final_test['Year'] = self.final_test.Date.dt.year
         self.final_test['Month'] = self.final_test.Date.dt.month
@@ -108,12 +107,10 @@ class DataExtraction:
         row_ids = list(row_ids)
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
         X = rows.drop(['Sales', 'Date'], axis=1).values
-
-        pdb.set_trace()
+        Xlists = [X[:, self.scalar_cols]] + [X[:, col][0][None,...]  for col in self.list_cols]
 
         X = np.concatenate(
-            [X[:, self.scalar_cols]],
-            [X[:, col] for col in self.list_cols],
+           Xlists,
             axis=1
         )
         y = rows.Sales.values
@@ -122,28 +119,29 @@ class DataExtraction:
     def extract_rows_and_days(self, row_ids):
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
         X = rows.drop(['Sales', 'Date'], axis=1).values
+        Xlists = [X[:, self.scalar_cols]] + [X[:, col][0][None,...] for col in self.list_cols]
+        print(Xlists)
         X = np.concatenate(
-            [X[:, col] for col in self.list_cols] +
-            [X[:, self.scalar_cols]],
+           Xlists,
             axis=1
         )
         y = rows.Sales.values
-        start_date = self.data.iloc[-1].Date
+        start_date = self.train.iloc[-1].Date
         days = rows.Date.apply(lambda x: (x - start_date).days).values
         return days, X, y
 
     def apply_feature_transformation(self):
         # TODO put the one hot mapping again
         abcd = {
-            "a": [1, 0, 0, 0],
-            "b": [0, 1, 0, 0],
-            "c": [0, 0, 1, 0],
-            "d": [0, 0, 0, 1]
+            "a": np.array([1, 0, 0, 0]),
+            "b": np.array([0, 1, 0, 0]),
+            "c": np.array([0, 0, 1, 0]),
+            "d": np.array([0, 0, 0, 1])
         }
         abc = {
-            "a": [1, 0, 0],
-            "b": [0, 1, 0],
-            "c": [0, 0, 1]
+            "a": np.array([1, 0, 0]),
+            "b": np.array([0, 1, 0]),
+            "c": np.array([0, 0, 1])
         }
 
         self.data = pd.merge(self.train, self.store, how='left', on='Store')
