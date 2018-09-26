@@ -18,6 +18,8 @@ except:
 MODELS = [XGBForecaster, FeedForwardNN1,
           LinearRegressor, SVRForecaster,
           NaiveForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+
+MODELS = [LSTMForecaster]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)

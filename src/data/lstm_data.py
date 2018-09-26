@@ -63,7 +63,7 @@ class LSTMData():
         X, Y, store_days = [], [], []
 
         # generate all batches
-        df = self.data_extract.train
+        df = self.data_extract.data
         self.store_ids = list(df.Store.unique())
         if self.is_debug:
             self.store_ids = [2, 3, 90]
@@ -86,7 +86,7 @@ class LSTMData():
             print("... Loaded cached data for store", store_id)
         except (AssertionError, FileNotFoundError) as e:
             print("... Extracting store", store_id, e)
-            df = self.data_extract.train
+            df = self.data_extract.data
             row_ids = df.index[df.Store == store_id]
             days, store_data, store_sales = self.data_extract.extract_rows_and_days(row_ids)
             days, store_data, store_sales = days[::-1], store_data[::-1], store_sales[::-1]
