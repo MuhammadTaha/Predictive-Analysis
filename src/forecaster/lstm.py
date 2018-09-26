@@ -57,7 +57,7 @@ class LSTMForecaster(AbstractForecaster):
             train_loss = self.model.train_on_batch(X, y, sample_weight=X[:, -1, data.open])
 
             #  logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
-            print("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
+            #  print("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
             train_losses.append(train_loss)
 
             if data.is_new_epoch or train_step % 100 == 0:
@@ -70,6 +70,12 @@ class LSTMForecaster(AbstractForecaster):
 
                 val_times.append(train_step)
                 print("({}) Step {}: Val loss {}".format(self.__class__.__name__, train_step, val_loss))
+                print("Avg prediction train: {} \nAvg sales train: {}\nAvg prediction test: {} \nAvg sales test: {}".format(
+                    np.mean(self.predict(X)),
+                    np.mean(y),
+                    np.mean(self.predict(data.X_val)),
+                    np.mean(data.y_val)
+                ))
             train_step += 1
 
         self.restore_model(".temp/{}_params".format(name))

@@ -19,7 +19,7 @@ MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../mode
 logger = logging.getLogger("forecaster")
 logger.setLevel(logging.DEBUG)
 
-EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training is stopped
+EPOCHS_BEFORE_STOP = 10  # number of epochs with no improvement before training is stopped
 
 EPS = 10
 
@@ -97,10 +97,10 @@ class AbstractForecaster(ABC):
 
         try:
             if len(X.shape) == 2:  # feed forward data
-                assert (y == y*X[:,  None]).all()
-                filter_open = X[:, None]
+                assert (y == y*X[:,  OPEN]).all()
+                filter_open = X[:, OPEN]
             elif len(X.shape) == 3:  # lstm data
-                filter_open = X[:, -1, None]
+                filter_open = X[:, -1, OPEN]
             else:
                 raise Warning("X shape is weird")
         except AssertionError:

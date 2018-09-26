@@ -54,6 +54,7 @@ class LSTMData():
         self.batch_info = self.compute_batch_info()
         self.X_val, self.y_val = self.all_test_data()
 
+
     def extract(self):
         print("... Extracting the data")
         # returns: X, Y, batch_info
@@ -158,8 +159,8 @@ class LSTMData():
         self.days_data = np.load(os.path.join(path, "X.npy"))
         self.sales = np.load(os.path.join(path, "y.npy"))
 
-    def new_epoch(self):
-        self.epochs += 1
+    def new_epoch(self, epoch=None):
+        self.epochs = epoch if epoch is not None else self.epochs + 1
         self.used_this_epoch = set()
         self.is_new_epoch = True
         print("START EPOCH", self.epochs)
@@ -168,7 +169,7 @@ class LSTMData():
         train_point_ids, test_point_ids = set(train_point_ids), set(test_point_ids)
         assert len(train_point_ids.intersection(test_point_ids)) == 0
         self.train_point_ids, self.test_point_ids = train_point_ids, test_point_ids
-        self.new_epoch()
+        self.new_epoch(1)
         self.X_val, self.y_val = self.all_test_data()
 
     def check(self, X, Y):

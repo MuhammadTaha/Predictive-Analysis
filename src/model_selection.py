@@ -43,6 +43,7 @@ def estimate_score(model_class, params):
     points = np.random.permutation(points)
     split = int(0.7 * len(points))
 
+    print("Train Test Split:")
     data.train_test_split(set(points[:split]), set(points[split:]))
 
     if hasattr(model, "sess"):
@@ -55,6 +56,8 @@ def estimate_score(model_class, params):
     score = model.score(data.X_val, data.y_val)
     if hasattr(model, "sess"):
         sess.close()
+
+    print("Final Score: ", score, "\nAvg prediction: ", np.mean(model.predict(data.X_val)), "\nAvg sales: ", np.mean(data.y_val))
 
     return score
 
