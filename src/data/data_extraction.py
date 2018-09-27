@@ -82,45 +82,50 @@ class DataExtraction:
 
         # don't remove any dates, this makes no sense with the lstm
 
-        # add dates information
-        self.train['Year'] = self.train.Date.dt.year
-        self.train['Month'] = self.train.Date.dt.month
-        self.train['Day'] = self.train.Date.dt.day
-        self.train['WeekOfYear'] = self.train.Date.dt.weekofyear
+        # add dates information # Why should they be useful?
+        # self.train['Year'] = self.train.Date.dt.year
+        # self.train['Month'] = self.train.Date.dt.month
+        # self.train['Day'] = self.train.Date.dt.day
+        # self.train['WeekOfYear'] = self.train.Date.dt.weekofyear
         self.train.drop('Date', axis=1)
         self.train.reset_index(inplace=True)
 
         # add dates information test data
-        self.final_test['Year'] = self.final_test.Date.dt.year
-        self.final_test['Month'] = self.final_test.Date.dt.month
-        self.final_test['Day'] = self.final_test.Date.dt.day
-        self.final_test['WeekOfYear'] = self.final_test.Date.dt.weekofyear
+        # self.final_test['Year'] = self.final_test.Date.dt.year
+        # self.final_test['Month'] = self.final_test.Date.dt.month
+        # self.final_test['Day'] = self.final_test.Date.dt.day
+        # self.final_test['WeekOfYear'] = self.final_test.Date.dt.weekofyear
         self.final_test.drop('Id', axis=1)
-        self.final_test.drop('Date', axis=1)
+        # self.final_test.drop('Date', axis=1)
         self.final_test.reset_index(inplace=True)
-
-    def _extract_label(self, row_id):
-        #  extracts the sales from the specified row
-        return [self.train.iloc[row_id]["Sales"]]
 
     def _extract_rows(self, row_ids):
         row_ids = list(row_ids)
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
         X = rows.drop(['Sales', 'Date'], axis=1).values
-        Xlists = [X[:, self.scalar_cols]] + [X[:, col][0][None,...]  for col in self.list_cols]
-
-        X = np.concatenate(
-           Xlists,
-            axis=1
-        )
+        Xlists = [X[:, self.scalar_cols]] + \
+            [ np.reshape(np.concatenate(X[:, col]), [X.shape[0], -1]) for col in self.list_cols]
+        try:
+            X = np.concatenate(
+               Xlists,
+                axis=1
+            )
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+            print(Xlists)
         y = rows.Sales.values
+        if not np.all(np.isfinite(y)):
+            pdb.set_trace()
+            print(y)
+
         return X, y
 
     def extract_rows_and_days(self, row_ids):
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
         X = rows.drop(['Sales', 'Date'], axis=1).values
-        Xlists = [X[:, self.scalar_cols]] + [X[:, col][0][None,...] for col in self.list_cols]
-        print(Xlists)
+        Xlists = [X[:, self.scalar_cols]] + \
+                 [np.reshape(np.concatenate(X[:, col]), [X.shape[0], -1]) for col in self.list_cols]
         X = np.concatenate(
            Xlists,
             axis=1
@@ -149,7 +154,10 @@ class DataExtraction:
         self.data.Assortment = self.data.Assortment.apply(lambda x: abc[x])
         self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
         self.data.StateHoliday = self.data.StateHoliday.apply(lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
-        self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1)
+        # self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1) # this gives infinity for the closed days, we need them for the lstm
+        # We can add in the model that it predicts logs, I would suggest we just scale it down so that it's in the range [0, 1+a bit]
+        # Scaling doesn't effect the percentage loss that we optimize, taking the log does
+
         #
         # # adding avg sales to data frame
         # sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
@@ -173,7 +181,6 @@ class DataExtraction:
         # self.data = self.data.drop(['cust_key', 'sales_key'], axis=1)
 
     def apply_feature_transformation_test(self):
-        # TODO put the one hot mapping again
         abcd = {
             "a": [1,0,0,0],
             "b": [0,1,0,0],

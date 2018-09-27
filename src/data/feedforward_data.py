@@ -20,7 +20,7 @@ class FeedForwardData(DataExtraction):
         train_point_ids, test_point_ids = set(train_point_ids), set(test_point_ids)
         assert len(train_point_ids.intersection(test_point_ids)) == 0
         self.train_point_ids, self.test_point_ids = train_point_ids, test_point_ids
-        self.new_epoch()
+        self.new_epoch(1)
         self.X_val, self.y_val = self.all_test_data()
 
     def next_train_batch(self, batch_size=50):
@@ -30,10 +30,10 @@ class FeedForwardData(DataExtraction):
         :return y: nd.array of shape (batch_size, 1)
         """
         if len(self.used_this_epoch) == len(self.train_point_ids):
-            self._new_epoch()
+            self.new_epoch()
         else:
             self.is_new_epoch = False
-        batch_size = min(batch_size, len(self.train_row_ids) - len(self.used_this_epoch))
+        batch_size = min(batch_size, len(self.train_point_ids) - len(self.used_this_epoch))
         point_ids = random.sample(self.train_point_ids - self.used_this_epoch, batch_size)
         self.used_this_epoch = self.used_this_epoch.union(set(point_ids))
         return self._extract_rows(point_ids)
@@ -44,8 +44,8 @@ class FeedForwardData(DataExtraction):
     def all_test_data(self):
         return self._extract_rows(self.test_point_ids)
 
-    def new_epoch(self):
-        self.epochs += 1
+    def new_epoch(self, epoch=None):
+        self.epochs = epoch if epoch is not None else self.epochs + 1
         self.used_this_epoch = set()
         self.is_new_epoch = True
         print("START EPOCH", self.epochs)

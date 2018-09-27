@@ -19,13 +19,13 @@ MODELS = [XGBForecaster, FeedForwardNN1,
           LinearRegressor, SVRForecaster,
           NaiveForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 
-MODELS = [LSTMForecaster]
+MODELS = [FeedForwardNN1, LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
 
 feed_forward_data = FeedForwardData()
-lstm_data = LSTMData(is_debug=True, update_disk=True, timesteps_per_point=10)
+lstm_data = LSTMData(is_debug=True, update_disk=True, update_cache=True, timesteps_per_point=10)
 
 NUM_POINTS_FOR_ESTIMATE = 2000  # 50000
 
@@ -54,10 +54,10 @@ def estimate_score(model_class, params):
     model.fit(data)
 
     score = model.score(data.X_val, data.y_val)
+    print("Final Score: ", score, "\nAvg prediction: ", np.mean(model.predict(data.X_val)), "\nAvg sales: ", np.mean(data.y_val))
+
     if hasattr(model, "sess"):
         sess.close()
-
-    print("Final Score: ", score, "\nAvg prediction: ", np.mean(model.predict(data.X_val)), "\nAvg sales: ", np.mean(data.y_val))
 
     return score
 

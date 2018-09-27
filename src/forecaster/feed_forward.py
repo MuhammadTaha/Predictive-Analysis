@@ -69,15 +69,15 @@ class FeedForward(AbstractForecaster):
 
     def _predict_zero_if_closed(self):
         self.output *= self.input * tf.constant(
-            np.eye(self.input.shape[OPEN])[None, ...]  # e_18 in shape (1 <broadcasts to #samples>, features_count)
+            (np.eye(self.input.shape[1])[OPEN])[None, ...]  # e_18 in shape (1 <broadcasts to #samples>, features_count)
             , dtype=tf.float32)
 
     def score(self, X, y):
         return self.sess.run(self.loss,
-                             feed_dict={self.input: X, self.true_sales: y})
+                             feed_dict={self.input: X, self.true_sales: y[...,None]})
 
     def _decision_function(self, X):
-        return self.sess.run(self.output, feed_dict={self.input: X})
+        return self.sess.run(self.output, feed_dict={self.input: X})[:,0]
 
     def _train(self, data):
         os.makedirs(".temp", exist_ok=True)
@@ -91,15 +91,26 @@ class FeedForward(AbstractForecaster):
 
         while early_stopping(train_step, val_losses, data.epochs): # no improvement in the last 10 epochs
             X, y = data.next_train_batch()
+            # cut days where the shop is closed
+            ind = np.where(X[:,OPEN] != 0)
+            X, y = X[ind], y[ind]
             train_loss, _ = self.sess.run([self.loss, self.train_step],
-                                    feed_dict={self.input: X, self.true_sales: y})
+                                    feed_dict={self.input: X, self.true_sales: y[...,None]})
             #  logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
-            print("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
+            # print("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
             train_losses.append(train_loss)
 
+            print("({}) Step {}: Val loss {}".format(self.__class__.__name__, train_step, val_losses[-1]))
+            print("Avg prediction train: {} \nAvg sales train: {}\nAvg prediction test: {} \nAvg sales test: {}".format(
+                np.mean(self.predict(X)),
+                np.mean(y),
+                np.mean(self.predict(data.X_val)),
+                np.mean(data.y_val)))
+
             if data.is_new_epoch or train_step % 100 == 0:
-                val_loss = self.sess.run(self.loss,
-                                         feed_dict={self.input: data.X_val, self.true_sales: data.y_val})
+                # val_loss = self.sess.run(self.loss,
+                #                          feed_dict={self.input: data.X_val, self.true_sales: data.y_val[...,None]})
+                val_loss = self.score(data.X_val, data.y_val)
                 val_losses.append(val_loss)
 
                 if val_loss == min(val_losses[1:]):
