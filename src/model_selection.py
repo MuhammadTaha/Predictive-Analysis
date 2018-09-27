@@ -7,7 +7,7 @@ import random
 import tensorflow as tf
 
 try:
-    from src.forecaster import lstm, FeedForwardNN1, LinearRegressor, SVRForecaster, NaiveForecaster
+    from src.forecaster import lstm, FeedForwardNN1, LinearRegressor, SVRForecaster, NaiveForecaster, FeedForwardKeras, LinearKeras
     from src.forecaster.XGBForecaster import XGBForecaster
     from src.data import FeedForwardData
     from src.data.lstm_data import LSTMData
@@ -18,7 +18,7 @@ except:
 MODELS = [XGBForecaster, SVRForecaster, FeedForwardNN1,
           LinearRegressor,
           NaiveForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
-MODELS = [FeedForwardNN1]
+MODELS = [FeedForwardKeras, LinearKeras]
 # MODELS = [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, FeedForwardNN1, LinearRegressor]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 

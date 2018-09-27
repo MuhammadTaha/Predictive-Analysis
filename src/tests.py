@@ -3,16 +3,12 @@ import os
 
 try:
     from src.forecaster.XGBForecaster import XGBForecaster
-    from src.forecaster.linear_regression import LinearRegressor
-    from src.forecaster.feed_forward_nn import FeedForwardNN1
     from src.forecaster.naive_forecaster import NaiveForecaster, NaiveForecaster2
     from src.data.feedforward_data import Data
     from src.visualize_predictions import visualize_predictions
 except ModuleNotFoundError:
     print("Use relative import without src")
     from forecaster.XGBForecaster import XGBForecaster
-    from forecaster.linear_regression import LinearRegressor
-    from forecaster.feed_forward_nn import FeedForwardNN1
     from forecaster.naive_forecaster import NaiveForecaster, NaiveForecaster2
     from data import *
     from visualize_predictions import visualize_predictions_quick
@@ -24,7 +20,7 @@ src_dir = os.path.dirname(os.path.abspath(__file__))
 
 class TestTraining(unittest.TestCase):
     # Tests to create a forecaster of the here listed classes and train it on our default Data class in toy mode
-    Models = [NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+    Models = [NaiveForecaster, XGBForecaster]
 
 
     def train_forecaster(self, forecaster, data):
