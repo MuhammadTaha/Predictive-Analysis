@@ -22,7 +22,7 @@ class LinearRegressor(FeedForward):
 
         # training
         # loss is Root Mean Square Percentage Error (RMSPE) (kaggle.com/c/rossmann-store-sales#evaluation)
-        self.loss = tf.sqrt(tf.reduce_mean(tf.square((self.output - self.true_sales + EPS) / (self.true_sales + EPS))))
+        self.loss = tf_rmspe(self.true_sales, self.output)
         optimizer = tf.train.AdamOptimizer()
         self.train_step = optimizer.minimize(self.loss)
 

@@ -21,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 
 EPOCHS_BEFORE_STOP = 10  # number of epochs with no improvement before training is stopped
 
-EPS = 10
+EPS = 50
 
 OPEN = 4
 
@@ -35,7 +35,7 @@ def tf_rmspe(sales, prediction):
     print("sales", sales.shape, "prediction", prediction.shape)
     return tf.sqrt(tf.reduce_mean(tf.square(
         (prediction - sales + EPS) / (sales + EPS)
-    ), axis=1))
+    )))
 
 
 def early_stopping_debug(train_step, val_losses, epochs):
@@ -99,6 +99,8 @@ class AbstractForecaster(ABC):
             assert (y == y * X[:, OPEN]).all()
         except AssertionError:
             print("({}) Warning: Original prediction not zero for rows where stores are closed")
+        except Exception as e:
+            print(type(e), e); pdb.set_trace()
 
         if len(X.shape) == 2:  # feed forward data
             filter_open = X[:, OPEN]
@@ -107,8 +109,9 @@ class AbstractForecaster(ABC):
         else:
             raise Warning("X shape is weird")
             pdb.set_trace()
-            
+
         return y * filter_open
+
 
     @abstractmethod
     def _decision_function(self, X):

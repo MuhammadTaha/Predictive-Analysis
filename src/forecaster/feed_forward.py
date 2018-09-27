@@ -31,7 +31,7 @@ class FeedForward(AbstractForecaster):
         eg we would destroy another trained model. (I couldn't find a way to initialize only the variables
         used by this class)
     """
-    def __init__(self, features_count=27, sess=None, plot_dir=None, batch_size=100):
+    def __init__(self, features_count, sess=None, plot_dir=None, batch_size=100):
         """
         :param features_count: #features of X
         :param sess: tf.Session to use, per default, a new session will be created.
@@ -90,26 +90,13 @@ class FeedForward(AbstractForecaster):
         train_step = 0
 
         while early_stopping(train_step, val_losses, data.epochs): # no improvement in the last 10 epochs
+
             X, y = data.next_train_batch()
             # cut days where the shop is closed
-            ind = np.where(X[:,OPEN] != 0)
+            ind = np.where(X[:, OPEN] != 0)
             X, y = X[ind], y[ind]
-            train_loss, _ = self.sess.run([self.loss, self.train_step],
-                                    feed_dict={self.input: X, self.true_sales: y[...,None]})
-            #  logging.info("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
-            # print("({}) Step {}: Train loss {}".format(self.__class__.__name__, train_step, train_loss))
-            train_losses.append(train_loss)
-
-            print("({}) Step {}: Val loss {}".format(self.__class__.__name__, train_step, val_losses[-1]))
-            print("Avg prediction train: {} \nAvg sales train: {}\nAvg prediction test: {} \nAvg sales test: {}".format(
-                np.mean(self.predict(X)),
-                np.mean(y),
-                np.mean(self.predict(data.X_val)),
-                np.mean(data.y_val)))
 
             if data.is_new_epoch or train_step % 100 == 0:
-                # val_loss = self.sess.run(self.loss,
-                #                          feed_dict={self.input: data.X_val, self.true_sales: data.y_val[...,None]})
                 val_loss = self.score(data.X_val, data.y_val)
                 val_losses.append(val_loss)
 
@@ -119,6 +106,16 @@ class FeedForward(AbstractForecaster):
 
                 val_times.append(train_step)
                 print("({}) Step {}: Val loss {}".format(self.__class__.__name__, train_step, val_loss))
+                print("Avg prediction train: {} \nAvg sales train: {}\nAvg prediction test: {} \nAvg sales test: {}".format(
+                        np.mean(self.predict(X)),
+                        np.mean(y),
+                        np.mean(self.predict(data.X_val)),
+                        np.mean(data.y_val)))
+
+            train_loss, _ = self.sess.run([self.loss, self.train_step],
+                                          feed_dict={self.input: X, self.true_sales: y[..., None]})
+            train_losses.append(train_loss)
+
             train_step += 1
 
         self.saver.restore(self.sess, ".temp/{}_params".format(name))
