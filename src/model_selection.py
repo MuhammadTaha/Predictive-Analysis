@@ -19,7 +19,7 @@ MODELS = [XGBForecaster, FeedForwardNN1,
           LinearRegressor, SVRForecaster,
           NaiveForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 
-MODELS = [FeedForwardNN1, LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor]
+MODELS = [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, FeedForwardNN1, LinearRegressor]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
@@ -53,7 +53,7 @@ def estimate_score(model_class, params):
 
     model.fit(data)
 
-    score = model.score(data.X_val, data.y_val)
+    score = float(model.score(data.X_val, data.y_val))
     print("Final Score: ", score, "\nAvg prediction: ", np.mean(model.predict(data.X_val)), "\nAvg sales: ", np.mean(data.y_val))
 
     if hasattr(model, "sess"):
@@ -96,9 +96,14 @@ def best_hyperparams_and_score(model_class, num_combinations=1):
     result_path = os.path.join(RESULT_DIR, "{}-hyperparameters.json".format(model_class.__name__))
     #  save the results
     with open(result_path, "w") as f:
-        result = json.dumps(result)
-        print("result to be dumped", result)
-        f.write(result)
+        try:
+            result = json.dumps(result)
+            print("result to be dumped", result)
+            f.write(result)
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+            print(result)
 
     return best_params, best_score
 

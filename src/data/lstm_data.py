@@ -173,9 +173,14 @@ class LSTMData():
         self.X_val, self.y_val = self.all_test_data()
 
     def check(self, X, Y):
-        X, Y = np.array(X), np.array(Y)
-        assert np.all(np.isfinite(X)), "X contains bad values: {}".format(np.where(not np.isfinite(X)))
-        assert np.all(np.isfinite(Y)), "Y contains bad values: {}".format(np.where(not np.isfinite(Y)))
+        X, Y = np.array(X, dtype=np.float32), np.array(Y, dtype=np.float32)
+        try:
+            assert np.all(np.isfinite(X)), "X contains bad values: {}".format(np.where(not np.isfinite(X)))
+            assert np.all(np.isfinite(Y)), "Y contains bad values: {}".format(np.where(not np.isfinite(Y)))
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+            print(X)
         return X, Y
 
     def next_train_batch(self):
