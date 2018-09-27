@@ -55,6 +55,11 @@ class DataExtraction:
         self.apply_feature_transformation()
         self.apply_feature_transformation_test()
 
+        for col_name in self.data.columns:
+            if col_name in self.final_test.columns or col_name=="Sales":
+                continue
+            self.data.drop(col_name, axis=1, inplace=True)
+
 
         # check where scalar cols and where list cols (one hot features) are
         # They will be flattened with the scalar columns first
@@ -192,7 +197,7 @@ class DataExtraction:
         self.y_mean = self.data.Sales.mean()
 
         for col_name in self.data.columns:
-            if col_name in ["Sales", "Index"]: continue
+            if col_name in ["Sales", "Index", "Date"]: continue
             if isinstance(self.data.iloc[0][col_name], (list, np.ndarray, )):
                 print("This is no scalar:", self.data.iloc[0][col_name], type(self.data.iloc[0][col_name]))
                 continue
