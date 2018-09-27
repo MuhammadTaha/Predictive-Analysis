@@ -22,7 +22,7 @@ RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_
 os.makedirs(RESULT_DIR, exist_ok=True)
 
 feed_forward_data = FeedForwardData()
-lstm_data = LSTMData(debug=True, update_disk=True, update_cache=True, timesteps_per_point=10)
+lstm_data = LSTMData(is_debug=True, update_disk=True, update_cache=True, timesteps_per_point=10)
 
 NUM_POINTS_FOR_ESTIMATE = 50000
 
