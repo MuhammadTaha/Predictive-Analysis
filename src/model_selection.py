@@ -15,19 +15,16 @@ except:
     from forecaster import *
     from data import *
 
-MODELS = [XGBForecaster, SVRForecaster, FeedForwardNN1,
-          LinearRegressor,
-          NaiveForecaster]  # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
 MODELS = [FeedForwardKeras, LinearKeras]
-# MODELS = [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, FeedForwardNN1, LinearRegressor]
+# MODELS = [LSTMForecaster, SVRForecaster, XGBForecaster, FeedForwardKeras, LinearKeras]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
 
 feed_forward_data = FeedForwardData()
-lstm_data = LSTMData(is_debug=True, update_disk=True, update_cache=True, timesteps_per_point=10)
+lstm_data = LSTMData(debug=True, update_disk=True, update_cache=True, timesteps_per_point=10)
 
-NUM_POINTS_FOR_ESTIMATE = 2000  # 50000
+NUM_POINTS_FOR_ESTIMATE = 50000
 
 
 def estimate_score(model_class, params):

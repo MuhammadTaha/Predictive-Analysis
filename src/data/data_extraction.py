@@ -55,6 +55,7 @@ class DataExtraction:
         self.apply_feature_transformation()
         self.apply_feature_transformation_test()
 
+
         # check where scalar cols and where list cols (one hot features) are
         # They will be flattened with the scalar columns first
         rows = self.data.iloc[[0]].drop(['index'], axis=1)
@@ -66,10 +67,14 @@ class DataExtraction:
 
         print("OPEN IS FEATURE ", self.open, "\nGO AND TELL THE MODULS")
 
+        self.normalize()
+
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
         self.date_keys = sorted(self.train.Date.unique())
         self.features_count = self._extract_rows([1])[0].shape[1]
+
+        print("extraction.data looks like this:", self.data.info())
 
         # we don't do anything with p_train and p_val here, because this stuff is handled by the data classes
 
@@ -179,6 +184,31 @@ class DataExtraction:
         # #
         # self.data = pd.merge(self.data, cust, how="left", on=('cust_key'))
         # self.data = self.data.drop(['cust_key', 'sales_key'], axis=1)
+
+    def normalize(self):
+        # Find range and save them
+        self.x_mean = self.data.mean(axis=0)
+        self.x_std = self.data.std(axis=0)
+        self.y_mean = self.data.Sales.mean()
+
+        for col_name in self.data.columns:
+            if col_name in ["Sales", "Index"]: continue
+            if isinstance(self.data.iloc[0][col_name], (list, np.ndarray, )):
+                print("This is no scalar:", self.data.iloc[0][col_name], type(self.data.iloc[0][col_name]))
+                continue
+            try:
+                mean = self.data[col_name].mean()
+                stddev = self.data[col_name].std()
+                print("m, std", mean, stddev)
+                self.data[col_name] = (self.data[col_name] - mean) / stddev
+                self.final_test[col_name] = (self.final_test[col_name] - mean)/stddev
+            except Exception as e:
+                print(type(e), e)
+                pdb.set_trace()
+        self.sales_scaled = self.data.Sales.mean()
+        self.data.Sales = self.data.Sales / self.data.Sales.mean()
+
+
 
     def apply_feature_transformation_test(self):
         abcd = {
