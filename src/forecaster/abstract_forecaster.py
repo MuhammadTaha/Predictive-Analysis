@@ -96,16 +96,18 @@ class AbstractForecaster(ABC):
         y = self._decision_function(X)
 
         try:
-            if len(X.shape) == 2:  # feed forward data
-                assert (y == y*X[:,  OPEN]).all()
-                filter_open = X[:, OPEN]
-            elif len(X.shape) == 3:  # lstm data
-                filter_open = X[:, -1, OPEN]
-            else:
-                raise Warning("X shape is weird")
+            assert (y == y * X[:, OPEN]).all()
         except AssertionError:
             print("({}) Warning: Original prediction not zero for rows where stores are closed")
 
+        if len(X.shape) == 2:  # feed forward data
+            filter_open = X[:, OPEN]
+        elif len(X.shape) == 3:  # lstm data
+            filter_open = X[:, -1, OPEN]
+        else:
+            raise Warning("X shape is weird")
+            pdb.set_trace()
+            
         return y * filter_open
 
     @abstractmethod
