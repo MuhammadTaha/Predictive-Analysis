@@ -17,6 +17,7 @@ import pandas as pd
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
 DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
 
+OPEN = None
 
 class DataExtraction:
     def __init__(self, data_dir=DATA_DIR, toy=False, keep_zero_sales=False):
@@ -46,10 +47,8 @@ class DataExtraction:
             self.train = self.train.loc[self.train.Store < 3]
 
         # clean stores with no sales and closed
-
         # if not keep_zero_sales:
         #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
-
 
         self.prepare_data_for_extraction()
         self.apply_feature_transformation()
@@ -60,17 +59,21 @@ class DataExtraction:
                 continue
             self.data.drop(col_name, axis=1, inplace=True)
 
-
         # check where scalar cols and where list cols (one hot features) are
         # They will be flattened with the scalar columns first
         rows = self.data.iloc[[0]].drop(['index'], axis=1)
         X = rows.drop(['Sales', 'Date'], axis=1).values
         self.scalar_cols = [id for id in range(X.shape[1]) if not isinstance(X[0,id], (np.ndarray, list,)) ]
         self.list_cols = [id for id in range(X.shape[1]) if isinstance(X[0,id], (np.ndarray, list,)) ]
-        open = self.data.columns.get_loc("Open")
-        self.open = self.scalar_cols.index(open)
 
-        print("OPEN IS FEATURE ", self.open, "\nGO AND TELL THE MODULS")
+        try:
+            assert np.all(self._extract_rows(range(100))[0][:,OPEN] == self.data.Open.values[:100])
+        except:
+            print("Extracted row OPEN vs data.Open: ",
+                  self._extract_rows(range(100))[0][:, OPEN] == self.data.values.Open[:100])
+            pdb.set_trace()
+
+        print("OPEN IS ", OPEN, "GO AND TELL THE MODULES\n and change it in abstract_forecaster if its not 0 anymore")
 
         self.normalize()
 
@@ -78,10 +81,6 @@ class DataExtraction:
         self.store_count = self.store.shape[0]
         self.date_keys = sorted(self.train.Date.unique())
         self.features_count = self._extract_rows([1])[0].shape[1]
-
-        print("extraction.data looks like this:", self.data.info())
-
-        # we don't do anything with p_train and p_val here, because this stuff is handled by the data classes
 
     def prepare_data_for_extraction(self):
         # Dropping features with high missing values percentage
@@ -127,26 +126,28 @@ class DataExtraction:
         y = rows.Sales.values
         if not np.all(np.isfinite(y)):
             pdb.set_trace()
-            print(y)
+            print("y not finite", y)
 
         return X, y
 
     def extract_rows_and_days(self, row_ids):
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
-        X = rows.drop(['Sales', 'Date'], axis=1).values
-        Xlists = [X[:, self.scalar_cols]] + \
-                 [np.reshape(np.concatenate(X[:, col]), [X.shape[0], -1]) for col in self.list_cols]
-        X = np.concatenate(
-           Xlists,
-            axis=1
-        )
-        y = rows.Sales.values
-        start_date = self.train.iloc[-1].Date
-        days = rows.Date.apply(lambda x: (x - start_date).days).values
+        try:
+            X = rows.drop(['Sales', 'Date'], axis=1).values
+            Xlists = [X[:, self.scalar_cols]] + \
+                     [np.reshape(np.concatenate(X[:, col]), [X.shape[0], -1]) for col in self.list_cols]
+            X = np.concatenate(
+               Xlists,
+                axis=1
+            )
+            y = rows.Sales.values
+            start_date = self.train.iloc[-1].Date
+            days = rows.Date.apply(lambda x: (x - start_date).days).values
+        except Exception as e:
+            print(type(e), e); import pdb
         return days, X, y
 
     def apply_feature_transformation(self):
-        # TODO put the one hot mapping again
         abcd = {
             "a": np.array([1, 0, 0, 0]),
             "b": np.array([0, 1, 0, 0]),
@@ -159,18 +160,35 @@ class DataExtraction:
             "c": np.array([0, 0, 1])
         }
 
+        sales_avg = self.train[['DayOfWeek', 'Store', 'Sales']]. \
+            groupby(['DayOfWeek', 'Store']) \
+            .apply(lambda x: 0 * x + np.mean(x))['Sales']
+        self.train["WeekdayStoreAvg"] = sales_avg
+
         self.data = pd.merge(self.train, self.store, how='left', on='Store')
         self.data.StoreType = self.data.StoreType.apply(lambda x: abcd[x])
         self.data.Assortment = self.data.Assortment.apply(lambda x: abc[x])
         self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
         self.data.StateHoliday = self.data.StateHoliday.apply(lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
-        # self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1) # this gives infinity for the closed days, we need them for the lstm
-        # We can add in the model that it predicts logs, I would suggest we just scale it down so that it's in the range [0, 1+a bit]
+
+        # Here we decide the order of columns, change carefully
+        other_cols = self.data.columns.tolist()
+        other_cols.remove("Open")
+        self.data = self.data[["Open"]+other_cols]
+        global OPEN
+        OPEN = 0
+        self.open = OPEN
+
+        # self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1)
+        #  this gives infinity for the closed days, we need them for the lstm
+        # We can add in the model that it predicts logs, I would suggest we
+        # just scale it down so that it's in the range [0, 1+a bit]
         # Scaling doesn't effect the percentage loss that we optimize, taking the log does
+
 
         #
         # # adding avg sales to data frame
-        # sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
+        #
         # sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
         # sales_avg = sales_avg.reset_index()
         # self.data['sales_key'] = self.data['Year'].map(str) + self.data['Month'].map(str) + self.data['Store'].map(str)
@@ -197,14 +215,13 @@ class DataExtraction:
         self.y_mean = self.data.Sales.mean()
 
         for col_name in self.data.columns:
-            if col_name in ["Sales", "Index", "Date"]: continue
+            if col_name in ["Sales", "Index", "Date", "Store", "Open"]: continue
             if isinstance(self.data.iloc[0][col_name], (list, np.ndarray, )):
                 print("This is no scalar:", self.data.iloc[0][col_name], type(self.data.iloc[0][col_name]))
                 continue
             try:
                 mean = self.data[col_name].mean()
                 stddev = self.data[col_name].std()
-                print("m, std", mean, stddev)
                 self.data[col_name] = (self.data[col_name] - mean) / stddev
                 self.final_test[col_name] = (self.final_test[col_name] - mean)/stddev
             except Exception as e:
@@ -212,6 +229,10 @@ class DataExtraction:
                 pdb.set_trace()
         self.sales_scaled = self.data.Sales.mean()
         self.data.Sales = self.data.Sales / self.data.Sales.mean()
+
+        # pdb.set_trace()
+        # print("calc the std devs and look at the data!")
+        # print(self.data.info())
 
 
 
@@ -227,6 +248,15 @@ class DataExtraction:
             "b": [0,1,0],
             "c": [0,0,1]
         }
+        print(
+            """
+            TODO add the weekday avg to test data
+            sales_avg = self.train[['DayOfWeek', 'Store', 'Sales']]. \
+                groupby(['DayOfWeek', 'Store']) \
+                .apply(lambda x: 0 * x + np.mean(x))['Sales']
+            self.train["WeekdayStoreAvg"] = sales_avg
+            """
+        )
 
         self.final_test = pd.merge(self.final_test, self.store, how='left', on='Store')
         self.final_test.StoreType = self.final_test.StoreType.apply(lambda x: abcd[x])

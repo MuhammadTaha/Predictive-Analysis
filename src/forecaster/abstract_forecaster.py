@@ -8,10 +8,7 @@ import numpy as np
 import pdb
 
 import logging
-try:
-    from src.data.feature_enum import *
-except ModuleNotFoundError:
-    from data.feature_enum import *
+
 
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
@@ -23,7 +20,7 @@ EPOCHS_BEFORE_STOP = 30  # number of epochs with no improvement before training 
 
 EPS = 50
 
-OPEN = 4
+OPEN = 0
 
 def rmspe(sales, prediction):
     return np.sqrt(np.mean(np.square(
