@@ -1,7 +1,7 @@
 try:
     from src.data.timeseries_data import TimeSeriesData
     from src.forecaster import *
-except ModuleNotFoundError:
+except:
     from data.timeseries_data import TimeSeriesData
     from forecaster import *
 import os

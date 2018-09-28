@@ -4,12 +4,11 @@ from sklearn.model_selection import RandomizedSearchCV, train_test_split
 import xgboost as xgb
 import numpy as np
 try:
-    from src.forecaster.abstract_forecaster import AbstractForecaster
+    from src.forecaster.abstract_forecaster import * # we need more than AbstractForecaster, don't change it to only import that
 except ModuleNotFoundError:
     print("Use relative import without src")
-    from .abstract_forecaster import AbstractForecaster
+    from .abstract_forecaster import *
 
-EPS = 0.1
 
 
 class XGBForecaster(AbstractForecaster):
@@ -72,7 +71,7 @@ class XGBForecaster(AbstractForecaster):
 
     @staticmethod
     def rmspe(y, yhat):
-        return np.sqrt(np.mean((yhat - y + EPS) / (y + EPS)) ** 2)
+        return rmspe(y, yhat)
 
     @staticmethod
     def rmspe_xg(yhat, y):

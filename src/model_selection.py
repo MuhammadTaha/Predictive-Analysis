@@ -1,29 +1,47 @@
-from data import Data
-import numpy as np
 import json
-import os
-import random
-try:
-    from .forecaster import *
-except:
-    from forecaster import *
 import pdb
 
-MODELS = [SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+import numpy as np
+import os
+import random
+import tensorflow as tf
+
+try:
+    from src.forecaster import lstm, FeedForwardNN1, LinearRegressor, SVRForecaster, NaiveForecaster, FeedForwardKeras, LinearKeras
+    from src.forecaster.XGBForecaster import XGBForecaster
+    from src.data import FeedForwardData
+    from src.data.lstm_data import LSTMData
+except:
+    from forecaster import *
+    from data import *
+
+MODELS = [FeedForwardKeras, LinearKeras]
+# MODELS = [LSTMForecaster, SVRForecaster, XGBForecaster, FeedForwardKeras, LinearKeras]
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
 
-data = Data()
+feed_forward_data = FeedForwardData()
+lstm_data = LSTMData(is_debug=True, update_disk=True, update_cache=True, timesteps_per_point=10)
 
-def estimate_score(model):
+NUM_POINTS_FOR_ESTIMATE = 50000
+
+
+def estimate_score(model_class, params):
+    data = lstm_data if model_class == lstm.LSTMForecaster else feed_forward_data
+    try:
+        model = model_class(features_count=data.features_count, **params)
+    except Exception as e:
+        print(e)
+        model = model_class(**params)
     # use the first 1000 batches only
 
-    batches = list(range(1000))
-    batches = np.random.permutation(batches)
-    split = int(0.7*len(batches))
+    points = list(range(NUM_POINTS_FOR_ESTIMATE))
+    points = np.random.permutation(points)
+    split = int(0.7 * len(points))
 
-    data.train_test_split(set(batches[:split]), set(batches[split:]))
+    print("Train Test Split:")
+    data.train_test_split(set(points[:split]), set(points[split:]))
 
     if hasattr(model, "sess"):
         sess = tf.Session()
@@ -32,22 +50,21 @@ def estimate_score(model):
 
     model.fit(data)
 
-    score = []
-    for batch_id in data.test_batch_ids:
-        score.append(model.score(data.batches_X[batch_id], data.batches_y[batch_id]))
+    score = float(model.score(data.X_val, data.y_val))
+    print("Final Score: ", score, "\nAvg prediction: ", np.mean(model.predict(data.X_val)), "\nAvg sales: ", np.mean(data.y_val))
 
     if hasattr(model, "sess"):
         sess.close()
 
-    return float(np.mean(score))
+    return score
 
 
-def best_hyperparams_and_score(model_class, num_combinations=10):
+def best_hyperparams_and_score(model_class, num_combinations=1):
     """
     Creates a <model_class.__name__>-hyperparameters.json :
     [ {"params": <params>, "score": <score>}, ...]
     """
-    params_choices  = model_class.params_grid
+    params_choices = model_class.params_grid
 
     # try different combinations
     # this is a random search in the paramater space, inspired by
@@ -56,7 +73,8 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
     def random_choice(key):
         if isinstance(params_choices[key], list):
             return random.choice(params_choices[key])
-        assert isinstance(params_choices[key], np.ndarray), "{} has for param of unknown type for {}".format(model_class.__name__, key)
+        assert isinstance(params_choices[key], np.ndarray), "{} has for param of unknown type for {}".format(
+            model_class.__name__, key)
         return np.random.choice(params_choices[key])
 
     result, best_params, best_score, tried = [], {}, np.inf, []
@@ -66,8 +84,8 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
         while params in tried:
             params = {key: random_choice(key) for key in params_choices.keys()}
         print("{} : try {}".format(model_class.__name__, params))
-        model = model_class(**params)
-        score = estimate_score(model)
+
+        score = estimate_score(model_class, params)
         result.append({"params": params, "score": score})
         if score <= best_score:
             best_params, best_score = params, score
@@ -75,9 +93,14 @@ def best_hyperparams_and_score(model_class, num_combinations=10):
     result_path = os.path.join(RESULT_DIR, "{}-hyperparameters.json".format(model_class.__name__))
     #  save the results
     with open(result_path, "w") as f:
-        result = json.dumps(result)
-        print("result to be dumped", result)
-        f.write(result)
+        try:
+            result = json.dumps(result)
+            print("result to be dumped", result)
+            f.write(result)
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+            print(result)
 
     return best_params, best_score
 
@@ -90,7 +113,7 @@ def model_selection(extend_existing_results=True):
     :return the best untrained model:
     """
     result_path = os.path.join(RESULT_DIR, 'model_selection.json')
-    try: # load old results and don't run modelselection for them again
+    try:  # load old results and don't run modelselection for them again
         assert extend_existing_results
         with open(result_path, "r") as f:
             result = json.load(f)
@@ -119,18 +142,28 @@ def model_selection(extend_existing_results=True):
 
     # initialize the best model
     best_score = max([class_result["score"] for class_result in result.values()])
-    best_class, best_params = [(class_name, result[class_name]["hyper_parameters"] )
-                                for class_name in result.keys()
-                                if result[class_name]["score"] == best_score][0]
-    model_class = [model_class for model_class in MODELS if model_class.__name__==best_class][0]
-    model = model_class(**best_params)
+    best_class, best_params = [(class_name, result[class_name]["hyper_parameters"])
+                               for class_name in result.keys()
+                               if result[class_name]["score"] == best_score][0]
+    model_class = [model_class for model_class in MODELS if model_class.__name__ == best_class][0]
+
+    try:
+        model = model_class(features_count=feed_forward_data.features_count, **best_params)
+    except:
+        try:
+            model = model_class(**best_params)
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+
     return model
 
 
 def train_best_model():
     model = model_selection()
+    data = lstm_data if isinstance(model, lstm.LSTMForecaster) else feed_forward_data
     batches = np.random.permutation(data.batches_X.shape[0])
-    split = int(0.75*len(batches))
+    split = int(0.75 * len(batches))
     data.train_test_split(set(batches[:split]), set(batches[split:]))
     model.fit(data)
     print("Save the best trained model")
@@ -146,5 +179,9 @@ def train_best_model():
         pdb.set_trace()
 
 
-def main():
+def main():  # please don't delete this, this is the entrypoint for main.py
     model_selection(False)
+
+
+if __name__ == '__main__':
+    main()

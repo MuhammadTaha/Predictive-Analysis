@@ -7,11 +7,13 @@ import numpy as np
 
 class SVRForecaster(AbstractForecaster):
     params_grid = {
-        "epsilon": list(range(0, 20, 2)),
+        "epsilon": list(range(-10, 5, 2)),
         "gamma": ['auto'] + list(range(1, 100, 10))
     }
 
     def __init__(self, epsilon=5, gamma='auto'):
+        if gamma != 'auto':
+            gamma = np.exp(gamma)
         self.svr = SVR(epsilon=epsilon, gamma=gamma)
 
     def _decision_function(self, X):
@@ -26,7 +28,7 @@ class SVRForecaster(AbstractForecaster):
 
     def score(self, X, y):
         prediction = self.predict(X)
-        return np.sqrt(np.mean(np.square((prediction - y + 0.1) / (y + 0.1))))
+        return rmspe(y, prediction)
 
     def save(self):
         file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")

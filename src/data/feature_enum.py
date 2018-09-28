@@ -15,6 +15,11 @@ COMPETETION_DISTANCE = 11
 PROMO2 = 12
 AVG_SALES = 13
 AVG_CUSTOMER = 14
+FEATURE_COUNT = 15
+
+FEATURES = ['Store', 'DayOfWeek', 'Promo', 'StateHoliday',
+            'SchoolHoliday', 'Year', 'Month', 'Day', 'WeekOfYear', 'StoreType',
+            'Assortment', 'CompetitionDistance', 'Promo2']
 
 abcd = {
     "a": [1, 0, 0, 0],
