@@ -27,6 +27,7 @@ class LSTMData():
         #except (FileNotFoundError, AssertionError) as e:
 
         self.data_extract = DataExtraction()
+        self.open = self.data_extract.open
         self.days_data, self.sales, self.store_days = self.extract()
         self.batch_info = self.compute_batch_info()
         #self.save(export_dir)
@@ -53,6 +54,7 @@ class LSTMData():
         self.batch_info = self.compute_batch_info()
         self.X_val, self.y_val = self.all_test_data()
 
+
     def extract(self):
         print("... Extracting the data")
         # returns: X, Y, batch_info
@@ -63,7 +65,7 @@ class LSTMData():
         X, Y, store_days = [], [], []
 
         # generate all batches
-        df = self.data_extract.train
+        df = self.data_extract.data
         self.store_ids = list(df.Store.unique())
         if self.is_debug:
             self.store_ids = [2, 3, 90]
@@ -86,7 +88,7 @@ class LSTMData():
             print("... Loaded cached data for store", store_id)
         except (AssertionError, FileNotFoundError) as e:
             print("... Extracting store", store_id, e)
-            df = self.data_extract.train
+            df = self.data_extract.data
             row_ids = df.index[df.Store == store_id]
             days, store_data, store_sales = self.data_extract.extract_rows_and_days(row_ids)
             days, store_data, store_sales = days[::-1], store_data[::-1], store_sales[::-1]
@@ -157,8 +159,8 @@ class LSTMData():
         self.days_data = np.load(os.path.join(path, "X.npy"))
         self.sales = np.load(os.path.join(path, "y.npy"))
 
-    def new_epoch(self):
-        self.epochs += 1
+    def new_epoch(self, epoch=None):
+        self.epochs = epoch if epoch is not None else self.epochs + 1
         self.used_this_epoch = set()
         self.is_new_epoch = True
         print("START EPOCH", self.epochs)
@@ -167,13 +169,18 @@ class LSTMData():
         train_point_ids, test_point_ids = set(train_point_ids), set(test_point_ids)
         assert len(train_point_ids.intersection(test_point_ids)) == 0
         self.train_point_ids, self.test_point_ids = train_point_ids, test_point_ids
-        self.new_epoch()
+        self.new_epoch(1)
         self.X_val, self.y_val = self.all_test_data()
 
     def check(self, X, Y):
-        X, Y = np.array(X), np.array(Y)
-        assert np.all(np.isfinite(X)), "X contains bad values: {}".format(np.where(not np.isfinite(X)))
-        assert np.all(np.isfinite(Y)), "Y contains bad values: {}".format(np.where(not np.isfinite(Y)))
+        X, Y = np.array(X, dtype=np.float32), np.array(Y, dtype=np.float32)
+        try:
+            assert np.all(np.isfinite(X)), "X contains bad values: {}".format(np.where(not np.isfinite(X)))
+            assert np.all(np.isfinite(Y)), "Y contains bad values: {}".format(np.where(not np.isfinite(Y)))
+        except Exception as e:
+            print(type(e), e)
+            pdb.set_trace()
+            print(X)
         return X, Y
 
     def next_train_batch(self):
