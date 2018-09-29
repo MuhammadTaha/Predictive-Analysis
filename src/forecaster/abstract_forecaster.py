@@ -23,6 +23,8 @@ EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training i
 
 EPS = 10
 
+EPOCHS = 500
+
 
 def rmspe(sales, prediction):
     return np.sqrt(np.mean(np.square(
@@ -66,15 +68,6 @@ class AbstractForecaster(ABC):
         pass
 
     def fit(self, data):
-        """
-            Function to fit new models.
-        :return: trained model
-        """
-        try:
-            X, y = check_X_y(data.X_val, data.y_val, y_numeric=True, warn_on_dtype=True)
-        except Exception as e:
-            # this check fails for lstm shaped input, so let's print it but allow it
-            print("check_X_y:", type(e), e)
         self.trained = True
         return self._train(data)
 
@@ -94,18 +87,18 @@ class AbstractForecaster(ABC):
         #  X = check_array(X)
         y = self._decision_function(X)
 
-        try:
-            if len(X.shape) == 2:  # feed forward data
-                assert (y == y*X[:,  None]).all()
-                filter_open = X[:, None]
-            elif len(X.shape) == 3:  # lstm data
-                filter_open = X[:, -1, None]
-            else:
-                raise Warning("X shape is weird")
-        except AssertionError:
-            print("({}) Warning: Original prediction not zero for rows where stores are closed")
+        # try:
+        #     if len(X.shape) == 2:  # feed forward data
+        #         assert (y == y*X[:,  None]).all()
+        #         filter_open = X[:, None]
+        #     elif len(X.shape) == 3:  # lstm data
+        #         filter_open = X[:, -1, None]
+        #     else:
+        #         raise Warning("X shape is weird")
+        # except AssertionError:
+        #     print("({}) Warning: Original prediction not zero for rows where stores are closed")
 
-        return y * filter_open
+        return y
 
     @abstractmethod
     def _decision_function(self, X):
@@ -143,7 +136,7 @@ class AbstractForecaster(ABC):
         return rmspe(y, p)
 
     def save(self):
-        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
+        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
         joblib.dump(self, os.path.join(MODEL_DIR, file_name))
         return os.path.join(MODEL_DIR, file_name)
 

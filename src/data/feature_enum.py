@@ -19,7 +19,7 @@ FEATURE_COUNT = 15
 
 FEATURES = ['Store', 'DayOfWeek', 'Promo', 'StateHoliday',
             'SchoolHoliday', 'Year', 'Month', 'Day', 'WeekOfYear', 'StoreType',
-            'Assortment', 'CompetitionDistance', 'Promo2']
+            'Assortment', 'CompetitionDistance', 'Promo2', 'Open']
 
 abcd = {
     "a": [1, 0, 0, 0],

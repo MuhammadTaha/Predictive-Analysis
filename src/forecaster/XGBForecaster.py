@@ -1,17 +1,20 @@
 # from sklearn.cross_validation import train_test_split
 
-from sklearn.model_selection import RandomizedSearchCV, train_test_split
 import xgboost as xgb
-import numpy as np
+
+from src.data import FeedForwardData
+
 try:
-    from src.forecaster.abstract_forecaster import * # we need more than AbstractForecaster, don't change it to only import that
+    from src.forecaster.abstract_forecaster import *  # we need more than AbstractForecaster, don't change it to only import that
 except ModuleNotFoundError:
     print("Use relative import without src")
     from .abstract_forecaster import *
 
 
-
 class XGBForecaster(AbstractForecaster):
+    def _build(self):
+        pass
+
     params_grid = {
         'learning_rate': np.random.uniform(0.01, 0.3, 2),
         'max_depth': list(range(10, 20, 2)),
@@ -20,38 +23,45 @@ class XGBForecaster(AbstractForecaster):
 
     initial_params = {
         'n_estimators': 500,
+        'max_depth': 15,
         'objective': 'reg:linear',
         'subsample': 0.8,
         'colsample_bytree': 0.85,
-        'seed': 42,
         'silent': True,
+        "booster": "gbtree",
+        "eta": 0.02
     }
 
-    n_rounds = 500
-    early_stopping_rounds = 50
+    n_rounds = 3000
+    early_stopping_rounds = 100
 
-    def __init__(self, **kwargs):
-        self.params = kwargs
-        assert set(self.params.keys()) == set(self.__class__.params_grid.keys()), \
-            "XGBForecaster: not all params set: {}".format(set(self.__class__.params_grid.keys())- \
-                                                           set(self.params.keys()) )
-
-    def _build(self):
-        pass
+    def __init__(self, load=False, **kwargs):
+        if 'params' in kwargs:
+            self.params = kwargs['params']
+        else:
+            self.params = self.initial_params
+        if load:
+            self.model = xgb.Booster(self.params)  # init model
+            self.model.load_model(os.path.join(MODEL_DIR, kwargs['file_path']))
 
     def _train(self, data):
-        # batch_size = 500
-        # X, y = data.next_train_batch(batch_size)
         X, y = data.all_train_data()
-        if self.params is None:
-            self.params = self._search_hyper_params(X[:500], y[:500])
-
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=7)
-        dtrain = xgb.DMatrix(X_train, y_train)
-        dtest = xgb.DMatrix(X_test, y_test)
-        watchlist = [(dtrain, 'train'), (dtest, 'test')]
-        self.model = xgb.train(self.params, dtrain, self.n_rounds, evals=watchlist, feval=self.rmspe_xg)
+        # X_train, X_test = train_test_split(X, test_size=0.05)
+        split = int(len(X) * 0.05)
+        X_train, y_train = data.all_train_data()
+        dtrain = xgb.DMatrix(X_train[split:], y_train[split:])
+        dtest = xgb.DMatrix(X_train[:split], y_train[:split])
+        watchlist = [(dtrain, 'train'), (dtest, 'eval')]
+        self.model = xgb.train(self.params, dtrain, self.n_rounds, evals=watchlist, early_stopping_rounds=100,
+                               feval=self.rmspe_xg)
         self.save()
+
+    def save(self):
+        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+        self.model.save_model(os.path.join(MODEL_DIR, file_name))
+
+    # def load_model(self, file_name):
+    #     self.model = xgb.load
 
     def _decision_function(self, X):
         return self.model.predict(xgb.DMatrix(X))
@@ -62,12 +72,11 @@ class XGBForecaster(AbstractForecaster):
         print("Validation score: {:.4f}".format(error))
         return error
 
-    def _search_hyper_params(self, X_train, y_train):
-
-        initial_model = xgb.XGBRegressor(**self.initial_params)
-        search_model = RandomizedSearchCV(initial_model, self.params_grid, cv=6)
-        search_model = search_model.fit(X_train, y_train)
-        return {**search_model.best_params_, **self.initial_params}
+    # def _search_hyper_params(self, X_train, y_train):
+    #     initial_model = xgb.XGBRegressor(**self.initial_params)
+    #     search_model = RandomizedSearchCV(initial_model, self.params_grid, cv=6)
+    #     search_model = search_model.fit(X_train, y_train)
+    #     return {**search_model.best_params_, **self.initial_params}
 
     @staticmethod
     def rmspe(y, yhat):
@@ -78,3 +87,13 @@ class XGBForecaster(AbstractForecaster):
         y = np.expm1(y.get_label())
         yhat = np.expm1(yhat)
         return "rmspe", XGBForecaster.rmspe(y, yhat)
+
+
+if __name__ == '__main__':
+    data = FeedForwardData()
+    points = list(range(2000))
+    points = np.random.permutation(points)
+    split = int(0.7 * len(points))
+    data.train_test_split(set(points[:split]), set(points[split:]))
+    forecaster = XGBForecaster()
+    forecaster._train(data)

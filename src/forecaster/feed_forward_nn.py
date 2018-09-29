@@ -12,7 +12,7 @@ class FeedForwardNN1(FeedForward):
         'predict_logs': [False] # [True, False] True gives nans all the time
     }
 
-    def __init__(self, features_count=27, sess=None, plot_dir=None, batch_size=100, hidden_features=[100], predict_logs=False):
+    def __init__(self, features_count=14, sess=None, plot_dir=None, batch_size=100, hidden_features=[100], predict_logs=False):
         """
         :param hidden_features: list of how many neurons each hidden layer should have
         :param predict_logs: predict log(y)

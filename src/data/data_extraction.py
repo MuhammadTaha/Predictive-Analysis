@@ -68,10 +68,11 @@ class DataExtraction:
                          'Promo2SinceYear', 'PromoInterval'], axis=1, inplace=True)
         # replace missing values by median
         self.store.CompetitionDistance.fillna(self._competition_distance_median, inplace=True)
+        self.final_test.fillna(1, inplace=True)
 
         # remove stores that's not open
         self.train = self.train[self.train['Open'] != 0]
-        self.train = self.train.drop('Open', axis=1)
+        # self.train = self.train.drop('Open', axis=1)
 
         # remove stores that't not open test data
         # self.final_test = self.final_test[self.final_test['Open'] != 0]
@@ -104,8 +105,8 @@ class DataExtraction:
     def _extract_rows(self, row_ids):
         row_ids = list(row_ids)
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
-        X = rows.drop(['Sales', 'Date'], axis=1).values
         y = rows.Sales.values
+        X = rows.drop(['Sales', 'Date','Customers'], axis=1).values
         return X, y
 
     def extract_rows_and_days(self, row_ids):
@@ -185,8 +186,8 @@ class DataExtraction:
             "b": 1,
             "c": 2
         }
-
         self.data = pd.merge(self.train, self.store, how='left', on='Store')
+        self.data.fillna(0, inplace=True)
         self.data.StoreType = self.data.StoreType.apply(lambda x: abcd[x])
         self.data.Assortment = self.data.Assortment.apply(lambda x: abc[x])
         # self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
@@ -227,7 +228,7 @@ class DataExtraction:
             "b": 1,
             "c": 2
         }
-
+        self.final_test.fillna(0, inplace=True)
         self.final_test = pd.merge(self.final_test, self.store, how='left', on='Store')
         self.final_test.StoreType = self.final_test.StoreType.apply(lambda x: abcd[x])
         self.final_test.Assortment = self.final_test.Assortment.apply(lambda x: abc[x])
