@@ -24,7 +24,7 @@ os.makedirs(RESULT_DIR, exist_ok=True)
 feed_forward_data = FeedForwardData()
 lstm_data = LSTMData(is_debug=True, update_disk=True, update_cache=True, timesteps_per_point=10)
 
-NUM_POINTS_FOR_ESTIMATE = 50000
+NUM_POINTS_FOR_ESTIMATE = 2000
 
 
 def estimate_score(model_class, params):

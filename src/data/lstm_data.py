@@ -39,6 +39,14 @@ class LSTMData():
         self.is_new_epoch = None
         self.features_count = np.array(self.get_point(0)[0]).shape[1]  # of 1st (X,y) pair, take 2nd element of X.shape
 
+
+        print("LSTM Data example batch:")
+        self.train_point_ids = set(range(self.batch_size))
+        self.new_epoch(-1)
+        print(self.next_train_batch())
+        self.train_point_ids = set()
+        self.new_epoch(-1)
+
     def compute_batch_info(self):
         batch_info = []
         for store_id, days in zip(self.store_ids, self.store_days):
@@ -93,12 +101,6 @@ class LSTMData():
             days, store_data, store_sales = self.data_extract.extract_rows_and_days(row_ids)
             days, store_data, store_sales = days[::-1], store_data[::-1], store_sales[::-1]
             self.cache_store(cache_dir, days, store_data, store_sales)
-
-        batch_info = [(store_id, day_id) for day_id, _ in enumerate(days)
-                        if day_id > self.num_tsteps and np.all( np.array(days[day_id-self.num_tsteps+2:day_id+1] \
-                                - np.array(days[day_id-self.num_tsteps+1:day_id]))
-                                == np.ones(self.num_tsteps-1))
-                    ]
 
         return store_data, store_sales, days
 

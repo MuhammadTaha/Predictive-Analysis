@@ -49,10 +49,14 @@ class DataExtraction:
         # clean stores with no sales and closed
         # if not keep_zero_sales:
         #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
-
-        self.prepare_data_for_extraction()
-        self.apply_feature_transformation()
-        self.apply_feature_transformation_test()
+        try:
+            self.data = pd.read_csv(data_dir + "/processed_data.csv")
+            print("We don't load the test data, we need to change the implementation for the final prediction")
+        except FileNotFoundError:
+            self.prepare_data_for_extraction()
+            self.apply_feature_transformation()
+            self.apply_feature_transformation_test()
+            self.data.to_csv(data_dir + "/processed_data.csv")
 
         for col_name in self.data.columns:
             if col_name in self.final_test.columns or col_name=="Sales":
@@ -76,6 +80,9 @@ class DataExtraction:
         print("OPEN IS ", OPEN, "GO AND TELL THE MODULES\n and change it in abstract_forecaster if its not 0 anymore")
 
         self.normalize()
+        print("Look at this data:")
+        print(self.data)
+        print(self.data.info())
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]

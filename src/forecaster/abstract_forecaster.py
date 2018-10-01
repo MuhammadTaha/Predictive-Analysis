@@ -18,7 +18,7 @@ logger.setLevel(logging.DEBUG)
 
 EPOCHS_BEFORE_STOP = 30  # number of epochs with no improvement before training is stopped
 
-EPS = 50
+EPS = 0.1
 
 OPEN = 0
 
