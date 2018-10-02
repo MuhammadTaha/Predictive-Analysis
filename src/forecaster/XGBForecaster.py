@@ -23,7 +23,7 @@ class XGBForecaster(AbstractForecaster):
 
     initial_params = {
         'n_estimators': 500,
-        'max_depth': 15,
+        'max_depth': 12,
         'objective': 'reg:linear',
         'subsample': 0.8,
         'colsample_bytree': 0.85,

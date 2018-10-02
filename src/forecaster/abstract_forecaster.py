@@ -23,7 +23,7 @@ EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training i
 
 EPS = 10
 
-EPOCHS = 500
+EPOCHS = 10
 
 
 def rmspe(sales, prediction):
@@ -83,7 +83,7 @@ class AbstractForecaster(ABC):
             Predict y values for input matrix X
             y.shape = (#samples, 1)
         """
-        assert self.trained, "Model is not trained cannot predict"
+        # assert self.trained, "Model is not trained cannot predict"
         #  X = check_array(X)
         y = self._decision_function(X)
 

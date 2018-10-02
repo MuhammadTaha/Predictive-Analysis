@@ -6,7 +6,7 @@ import os
 import random
 
 try:
-    from src.forecaster import lstm, FeedForwardNN1, LinearRegressor, SVRForecaster, NaiveForecaster, FeedForward
+    from src.forecaster import lstm
     from src.forecaster.XGBForecaster import XGBForecaster
     from src.data import FeedForwardData
     from src.data.lstm_data import LSTMData
@@ -18,14 +18,14 @@ except:
 #           LinearRegressor, SVRForecaster,
 #           NaiveForecaster]
 # [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
-MODELS = [XGBForecaster, LinearRegressor, FeedForward, SVRForecaster] #FeedForwardNN1  NaiveForecaster,
+MODELS = [lstm.LSTMForecaster] #FeedForwardNN1  NaiveForecaster,
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
 
 feed_forward_data = FeedForwardData()
-# lstm_data = LSTMData(is_debug=True, update_disk=True, timesteps_per_point=10)
-lstm_data = None
+lstm_data = LSTMData(is_debug=True, update_disk=True, timesteps_per_point=10)
+# lstm_data = None
 
 NUM_POINTS_FOR_ESTIMATE = feed_forward_data.data.shape[0]
 

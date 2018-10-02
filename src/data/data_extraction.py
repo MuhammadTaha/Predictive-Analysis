@@ -187,12 +187,16 @@ class DataExtraction:
             "c": 2
         }
         self.data = pd.merge(self.train, self.store, how='left', on='Store')
-        self.data.fillna(0, inplace=True)
+        self.data.fillna(0.0, inplace=True)
         self.data.StoreType = self.data.StoreType.apply(lambda x: abcd[x])
         self.data.Assortment = self.data.Assortment.apply(lambda x: abc[x])
         # self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
         self.data.StateHoliday = self.data.StateHoliday.apply(lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
         self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1)
+        sales_avg = self.data[['DayOfWeek', 'Store', 'Sales']].groupby(['DayOfWeek', 'Store']).mean()
+        sales_avg = sales_avg.reset_index()
+        self.sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
+        self.data = pd.merge(self.data, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
         #
         # # adding avg sales to data frame
         # sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
@@ -228,15 +232,18 @@ class DataExtraction:
             "b": 1,
             "c": 2
         }
-        self.final_test.fillna(0, inplace=True)
+        self.final_test.fillna(0.0, inplace=True)
         self.final_test = pd.merge(self.final_test, self.store, how='left', on='Store')
         self.final_test.StoreType = self.final_test.StoreType.apply(lambda x: abcd[x])
         self.final_test.Assortment = self.final_test.Assortment.apply(lambda x: abc[x])
         self.final_test.StateHoliday = self.final_test.StateHoliday.apply(
             lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
+
+        self.final_test = pd.merge(self.final_test, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
+        self.final_test.fillna(0.0, inplace=True)
         # self.final_test.Sales = self.final_test.Sales.apply(lambda x: np.log(x) + 1)
         # adding avg sales to data frame
-        # sales_avg = self.final_test[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
+
         # sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
         # sales_avg = sales_avg.reset_index()
         # self.final_test['sales_key'] = self.final_test['Year'].map(str) + self.final_test['Month'].map(str) + \

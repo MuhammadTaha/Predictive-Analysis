@@ -34,7 +34,7 @@ class FeedForward(AbstractForecaster):
         used by this class)
     """
 
-    def __init__(self, features_count=14, sess=None, plot_dir=None, batch_size=100):
+    def __init__(self, features_count=15, sess=None, plot_dir=None, batch_size=100):
         """
         :param features_count: #features of X
         :param sess: tf.Session to use, per default, a new session will be created.
@@ -59,14 +59,15 @@ class FeedForward(AbstractForecaster):
             , dtype=tf.float32)
 
     def score(self, X, y):
+        print(mean_absolute_error(y, self._decision_function(X)))
         return mean_absolute_error(y, self._decision_function(X))
 
     def _decision_function(self, X):
-        return self.model.predict(X)
+        return np.squeeze(self.model.predict(X))
 
     def _train(self, data):
         X, y = data.all_train_data()
-        history = self.model.fit(X, y, validation_split=0.2, epochs=10)
+        history = self.model.fit(X, y, validation_split=0.2, epochs=EPOCHS)
 
         # if self.plot_dir is not None:
         #     self._train_plot(train_losses, val_losses, val_times)
@@ -79,9 +80,9 @@ class FeedForward(AbstractForecaster):
         plt.clf()
 
     def save(self):
-        model_path = super().save()
+        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
         # self.saver.save(self.sess, model_path + "_params")
-        self.model.save(model_path)
+        self.model.save(os.path.join(MODEL_DIR, file_name))
 
     def load_params(self, file_name):
         self.saver.restore(self.sess, file_name)
@@ -97,4 +98,4 @@ class FeedForward(AbstractForecaster):
         self.model.add(Dropout(0.2))
         self.model.add(Activation('tanh'))
         self.model.add(Dense(output_dim=1))
-        self.model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mae', 'acc'])
+        self.model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mae', 'acc'])
