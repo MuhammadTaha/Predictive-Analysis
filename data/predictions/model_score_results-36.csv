@@ -1,0 +1,11 @@
+,model_name,params,score
+0,FeedForward,"{'activation': 'sigmoid', 'units': 150, 'n_layers': 4}",9.659089881729946
+1,FeedForward,"{'activation': 'sigmoid', 'units': 50, 'n_layers': 2}",0.306406512477649
+2,FeedForward,"{'activation': 'sigmoid', 'units': 70, 'n_layers': 4}",0.31515505709985386
+3,FeedForward,"{'activation': 'tanh', 'units': 50, 'n_layers': 3}",0.29707942813947413
+4,FeedForward,"{'activation': 'sigmoid', 'units': 190, 'n_layers': 3}",9.659089881729946
+5,FeedForward,"{'activation': 'tanh', 'units': 80, 'n_layers': 3}",0.2960020904823895
+6,FeedForward,"{'activation': 'sigmoid', 'units': 50, 'n_layers': 1}",0.31359523294301467
+7,FeedForward,"{'activation': 'sigmoid', 'units': 50, 'n_layers': 2}",0.3168455277446852
+8,FeedForward,"{'activation': 'tanh', 'units': 130, 'n_layers': 1}",0.3173996896334749
+9,FeedForward,"{'activation': 'sigmoid', 'units': 80, 'n_layers': 3}",0.31015998539489675

@@ -17,7 +17,6 @@ import pandas as pd
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
 DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
 
-OPEN = None
 
 class DataExtraction:
     def __init__(self, data_dir=DATA_DIR, toy=False, keep_zero_sales=False):
@@ -47,47 +46,21 @@ class DataExtraction:
             self.train = self.train.loc[self.train.Store < 3]
 
         # clean stores with no sales and closed
+
         # if not keep_zero_sales:
         #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
-        try:
-            self.data = pd.read_csv(data_dir + "/processed_data.csv")
-            print("We don't load the test data, we need to change the implementation for the final prediction")
-        except FileNotFoundError:
-            self.prepare_data_for_extraction()
-            self.apply_feature_transformation()
-            self.apply_feature_transformation_test()
-            self.data.to_csv(data_dir + "/processed_data.csv")
 
-        for col_name in self.data.columns:
-            if col_name in self.final_test.columns or col_name=="Sales":
-                continue
-            self.data.drop(col_name, axis=1, inplace=True)
 
-        # check where scalar cols and where list cols (one hot features) are
-        # They will be flattened with the scalar columns first
-        rows = self.data.iloc[[0]].drop(['index'], axis=1)
-        X = rows.drop(['Sales', 'Date'], axis=1).values
-        self.scalar_cols = [id for id in range(X.shape[1]) if not isinstance(X[0,id], (np.ndarray, list,)) ]
-        self.list_cols = [id for id in range(X.shape[1]) if isinstance(X[0,id], (np.ndarray, list,)) ]
-
-        try:
-            assert np.all(self._extract_rows(range(100))[0][:,OPEN] == self.data.Open.values[:100])
-        except:
-            print("Extracted row OPEN vs data.Open: ",
-                  self._extract_rows(range(100))[0][:, OPEN] == self.data.values.Open[:100])
-            pdb.set_trace()
-
-        print("OPEN IS ", OPEN, "GO AND TELL THE MODULES\n and change it in abstract_forecaster if its not 0 anymore")
-
-        self.normalize()
-        print("Look at this data:")
-        print(self.data)
-        print(self.data.info())
+        self.prepare_data_for_extraction()
+        self.apply_feature_transformation()
+        self.apply_feature_transformation_test()
 
         self.time_count = self.train.shape[0]
         self.store_count = self.store.shape[0]
         self.date_keys = sorted(self.train.Date.unique())
         self.features_count = self._extract_rows([1])[0].shape[1]
+        self.p_val = 0.2
+        self.p_train = 0.8
 
     def prepare_data_for_extraction(self):
         # Dropping features with high missing values percentage
@@ -95,107 +68,138 @@ class DataExtraction:
                          'Promo2SinceYear', 'PromoInterval'], axis=1, inplace=True)
         # replace missing values by median
         self.store.CompetitionDistance.fillna(self._competition_distance_median, inplace=True)
+        self.final_test.fillna(1, inplace=True)
 
-        # don't remove any dates, this makes no sense with the lstm
+        # remove stores that's not open
+        self.train = self.train[self.train['Open'] != 0]
+        # self.train = self.train.drop('Open', axis=1)
 
-        # add dates information # Why should they be useful?
-        # self.train['Year'] = self.train.Date.dt.year
-        # self.train['Month'] = self.train.Date.dt.month
-        # self.train['Day'] = self.train.Date.dt.day
-        # self.train['WeekOfYear'] = self.train.Date.dt.weekofyear
+        # remove stores that't not open test data
+        # self.final_test = self.final_test[self.final_test['Open'] != 0]
+        # self.final_test = self.final_test.drop('Open', axis=1)
+
+        # remove entries with zero sales
+        self.train = self.train[self.train['Sales'] != 0]
+
+        # add dates information
+        self.train['Year'] = self.train.Date.dt.year
+        self.train['Month'] = self.train.Date.dt.month
+        self.train['Day'] = self.train.Date.dt.day
+        self.train['WeekOfYear'] = self.train.Date.dt.weekofyear
         self.train.drop('Date', axis=1)
         self.train.reset_index(inplace=True)
 
         # add dates information test data
-        # self.final_test['Year'] = self.final_test.Date.dt.year
-        # self.final_test['Month'] = self.final_test.Date.dt.month
-        # self.final_test['Day'] = self.final_test.Date.dt.day
-        # self.final_test['WeekOfYear'] = self.final_test.Date.dt.weekofyear
+        self.final_test['Year'] = self.final_test.Date.dt.year
+        self.final_test['Month'] = self.final_test.Date.dt.month
+        self.final_test['Day'] = self.final_test.Date.dt.day
+        self.final_test['WeekOfYear'] = self.final_test.Date.dt.weekofyear
         self.final_test.drop('Id', axis=1)
-        # self.final_test.drop('Date', axis=1)
+        self.final_test.drop('Date', axis=1)
         self.final_test.reset_index(inplace=True)
+
+    def _extract_label(self, row_id):
+        #  extracts the sales from the specified row
+        return [self.train.iloc[row_id]["Sales"]]
 
     def _extract_rows(self, row_ids):
         row_ids = list(row_ids)
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
-        X = rows.drop(['Sales', 'Date'], axis=1).values
-        Xlists = [X[:, self.scalar_cols]] + \
-            [ np.reshape(np.concatenate(X[:, col]), [X.shape[0], -1]) for col in self.list_cols]
-        try:
-            X = np.concatenate(
-               Xlists,
-                axis=1
-            )
-        except Exception as e:
-            print(type(e), e)
-            pdb.set_trace()
-            print(Xlists)
         y = rows.Sales.values
-        if not np.all(np.isfinite(y)):
-            pdb.set_trace()
-            print("y not finite", y)
-
+        X = rows.drop(['Sales', 'Date','Customers'], axis=1).values
         return X, y
 
     def extract_rows_and_days(self, row_ids):
         rows = self.data.iloc[row_ids].drop(['index'], axis=1)
-        try:
-            X = rows.drop(['Sales', 'Date'], axis=1).values
-            Xlists = [X[:, self.scalar_cols]] + \
-                     [np.reshape(np.concatenate(X[:, col]), [X.shape[0], -1]) for col in self.list_cols]
-            X = np.concatenate(
-               Xlists,
-                axis=1
-            )
-            y = rows.Sales.values
-            start_date = self.train.iloc[-1].Date
-            days = rows.Date.apply(lambda x: (x - start_date).days).values
-        except Exception as e:
-            print(type(e), e); import pdb
+        X = rows.drop(['Sales', 'Date'], axis=1).values
+        y = rows.Sales.values
+        start_date = self.data.iloc[-1].Date
+        days = rows.Date.apply(lambda x: (x - start_date).days).values
         return days, X, y
 
+    def _extract_row(self, row_id):
+        """
+        :param row: row of self.train to extract features for
+        :return: nd.array of shape (#features)
+        """
+
+        """
+        Store
+            RangeIndex: 1115 entries, 0 to 1114
+            Data columns (total 10 columns):
+            Store                        1115 non-null int64
+            StoreType                    1115 non-null object
+            Assortment                   1115 non-null object
+            CompetitionDistance          1112 non-null float64
+            CompetitionOpenSinceMonth    761 non-null float64
+            CompetitionOpenSinceYear     761 non-null float64
+            Promo2                       1115 non-null int64
+            Promo2SinceWeek              571 non-null float64
+            Promo2SinceYear              571 non-null float64
+            PromoInterval                571 non-null object
+            dtypes: float64(5), int64(2), object(3)
+
+        Train
+            RangeIndex: 1017209 entries, 0 to 1017208
+            Data columns (total 9 columns):
+            Store            1017209 non-null int64
+            DayOfWeek        1017209 non-null int64
+            Date             1017209 non-null object
+            Sales            1017209 non-null int64
+            Customers        1017209 non-null int64
+            Open             1017209 non-null int64
+            Promo            1017209 non-null int64
+            StateHoliday     1017209 non-null object
+            SchoolHoliday    1017209 non-null int64
+            dtypes: int64(7), object(2)
+
+        We extract
+            Store Type	                One hot 4
+            Assortment	                One hot 3
+            CompetitionDistance	        float
+            Promo2                      {0,1}
+            Store                       int
+            
+            DayOfWeek                   One hot 7
+            Open                        {0,1}
+            Promo                       {0,1}
+            StateHoliday                {0, 'b', 'a', '0', 'c'} => one hot 4
+            SchoolHoliday	            {0,1}
+        """
+        try:
+            row = self.train.iloc[row_id]
+        except:
+            print(row_id)
+            pdb.set_trace()
+        return self._extract_loaded_row(row)
+
     def apply_feature_transformation(self):
+        # TODO put the one hot mapping again
         abcd = {
-            "a": np.array([1, 0, 0, 0]),
-            "b": np.array([0, 1, 0, 0]),
-            "c": np.array([0, 0, 1, 0]),
-            "d": np.array([0, 0, 0, 1])
+            "a": 0,
+            "b": 1,
+            "c": 2,
+            "d": 3
         }
         abc = {
-            "a": np.array([1, 0, 0]),
-            "b": np.array([0, 1, 0]),
-            "c": np.array([0, 0, 1])
+            "a": 0,
+            "b": 1,
+            "c": 2
         }
-
-        sales_avg = self.train[['DayOfWeek', 'Store', 'Sales']]. \
-            groupby(['DayOfWeek', 'Store']) \
-            .apply(lambda x: 0 * x + np.mean(x))['Sales']
-        self.train["WeekdayStoreAvg"] = sales_avg
-
         self.data = pd.merge(self.train, self.store, how='left', on='Store')
+        self.data.fillna(0.0, inplace=True)
         self.data.StoreType = self.data.StoreType.apply(lambda x: abcd[x])
         self.data.Assortment = self.data.Assortment.apply(lambda x: abc[x])
-        self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
+        # self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
         self.data.StateHoliday = self.data.StateHoliday.apply(lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
-
-        # Here we decide the order of columns, change carefully
-        other_cols = self.data.columns.tolist()
-        other_cols.remove("Open")
-        self.data = self.data[["Open"]+other_cols]
-        global OPEN
-        OPEN = 0
-        self.open = OPEN
-
-        # self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1)
-        #  this gives infinity for the closed days, we need them for the lstm
-        # We can add in the model that it predicts logs, I would suggest we
-        # just scale it down so that it's in the range [0, 1+a bit]
-        # Scaling doesn't effect the percentage loss that we optimize, taking the log does
-
-
+        self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1)
+        sales_avg = self.data[['DayOfWeek', 'Store', 'Sales']].groupby(['DayOfWeek', 'Store']).mean()
+        sales_avg = sales_avg.reset_index()
+        self.sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
+        self.data = pd.merge(self.data, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
         #
         # # adding avg sales to data frame
-        #
+        # sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
         # sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
         # sales_avg = sales_avg.reset_index()
         # self.data['sales_key'] = self.data['Year'].map(str) + self.data['Month'].map(str) + self.data['Store'].map(str)
@@ -215,64 +219,31 @@ class DataExtraction:
         # self.data = pd.merge(self.data, cust, how="left", on=('cust_key'))
         # self.data = self.data.drop(['cust_key', 'sales_key'], axis=1)
 
-    def normalize(self):
-        # Find range and save them
-        self.x_mean = self.data.mean(axis=0)
-        self.x_std = self.data.std(axis=0)
-        self.y_mean = self.data.Sales.mean()
-
-        for col_name in self.data.columns:
-            if col_name in ["Sales", "Index", "Date", "Store", "Open"]: continue
-            if isinstance(self.data.iloc[0][col_name], (list, np.ndarray, )):
-                print("This is no scalar:", self.data.iloc[0][col_name], type(self.data.iloc[0][col_name]))
-                continue
-            try:
-                mean = self.data[col_name].mean()
-                stddev = self.data[col_name].std()
-                self.data[col_name] = (self.data[col_name] - mean) / stddev
-                self.final_test[col_name] = (self.final_test[col_name] - mean)/stddev
-            except Exception as e:
-                print(type(e), e)
-                pdb.set_trace()
-        self.sales_scaled = self.data.Sales.mean()
-        self.data.Sales = self.data.Sales / self.data.Sales.mean()
-
-        # pdb.set_trace()
-        # print("calc the std devs and look at the data!")
-        # print(self.data.info())
-
-
-
     def apply_feature_transformation_test(self):
+        # TODO put the one hot mapping again
         abcd = {
-            "a": [1,0,0,0],
-            "b": [0,1,0,0],
-            "c": [0,0,1,0],
-            "d": [0,0,0,1]
+            "a": 0,
+            "b": 1,
+            "c": 2,
+            "d": 3
         }
         abc = {
-            "a": [1,0,0],
-            "b": [0,1,0],
-            "c": [0,0,1]
+            "a": 0,
+            "b": 1,
+            "c": 2
         }
-        print(
-            """
-            TODO add the weekday avg to test data
-            sales_avg = self.train[['DayOfWeek', 'Store', 'Sales']]. \
-                groupby(['DayOfWeek', 'Store']) \
-                .apply(lambda x: 0 * x + np.mean(x))['Sales']
-            self.train["WeekdayStoreAvg"] = sales_avg
-            """
-        )
-
+        self.final_test.fillna(0.0, inplace=True)
         self.final_test = pd.merge(self.final_test, self.store, how='left', on='Store')
         self.final_test.StoreType = self.final_test.StoreType.apply(lambda x: abcd[x])
         self.final_test.Assortment = self.final_test.Assortment.apply(lambda x: abc[x])
         self.final_test.StateHoliday = self.final_test.StateHoliday.apply(
             lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
+
+        self.final_test = pd.merge(self.final_test, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
+        self.final_test.fillna(0.0, inplace=True)
         # self.final_test.Sales = self.final_test.Sales.apply(lambda x: np.log(x) + 1)
         # adding avg sales to data frame
-        # sales_avg = self.final_test[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
+
         # sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
         # sales_avg = sales_avg.reset_index()
         # self.final_test['sales_key'] = self.final_test['Year'].map(str) + self.final_test['Month'].map(str) + \
@@ -293,6 +264,61 @@ class DataExtraction:
         # #
         # self.final_test = pd.merge(self.final_test, cust, how="left", on=('cust_key'))
         # self.final_test = self.final_test.drop(['cust_key', 'sales_key'], axis=1)
+
+    def _extract_loaded_row(self, row):
+        abcd = {
+            "a": [1, 0, 0, 0],
+            "b": [0, 1, 0, 0],
+            "c": [0, 0, 1, 0],
+            "d": [0, 0, 0, 1]
+        }
+        abc = {
+            "a": [1, 0, 0],
+            "b": [0, 1, 0],
+            "c": [0, 0, 1]
+        }
+
+        store_id = row["Store"]
+        store = self.store.iloc[store_id - 1]
+
+        # store features
+        store_type = abcd[store["StoreType"]]
+        assortment = abc[store["Assortment"]]
+        competition_distance = store["CompetitionDistance"]
+
+        day_of_week = np.eye(7)[row["DayOfWeek"] - 1]
+        promo = row["Promo"]
+        state_holiday = row["StateHoliday"]
+        if state_holiday not in abcd.keys(): state_holiday = "d"
+        state_holiday = abcd[state_holiday]
+        school_holiday = row["SchoolHoliday"]
+
+        year, month, day, WeekOfYear = row.Year, row.Month, row.Day, row.WeekOfYear
+
+        weekday_store_avg = self._weekday_store_avg(row)
+        week_of_year_avg = self._week_of_year_avg(row)
+        month_store_avg = self._month_store_avg(row)
+        promo2 = store['Promo2']
+        features = np.concatenate(
+            (store_type, assortment, [competition_distance, promo2], day_of_week, [promo], state_holiday,
+             [school_holiday, np.log(weekday_store_avg), np.log(week_of_year_avg), year, month, day, WeekOfYear,
+              np.log(month_store_avg)]))
+        return features
+
+    def _month_store_avg(self, row):
+        avg = self.train.Sales[
+            (self.train.Store == row.Store) & (self.train.Year == row.Year) & (self.train.Month == row.Month)].mean()
+        return np.log(avg) if avg is not np.isnan(avg) else 0
+
+    def _weekday_store_avg(self, row):
+        avg = self.train.Sales[(self.train.Store == row.Store) & (self.train.Year == row.Year) & (
+            self.train.DayOfWeek == row.DayOfWeek)].mean()
+        return np.log(avg) if avg is not np.isnan(avg) else 0
+
+    def _week_of_year_avg(self, row):
+        avg = self.train.Sales[(self.train.Store == row.Store) & (self.train.Year == row.Year) & (
+            self.train.WeekOfYear == row.WeekOfYear)].mean()
+        return np.log(avg) if avg is not np.isnan(avg) else 0
 
     def _values_missing(self, *args):
         return any([a is None for a in args]) or np.any(np.isnan(args))

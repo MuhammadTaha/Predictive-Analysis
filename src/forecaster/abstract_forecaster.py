@@ -8,7 +8,10 @@ import numpy as np
 import pdb
 
 import logging
-
+try:
+    from src.data.feature_enum import *
+except ModuleNotFoundError:
+    from data.feature_enum import *
 
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../models")
@@ -16,11 +19,13 @@ MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../mode
 logger = logging.getLogger("forecaster")
 logger.setLevel(logging.DEBUG)
 
-EPOCHS_BEFORE_STOP = 30  # number of epochs with no improvement before training is stopped
+EPOCHS_BEFORE_STOP = 2  # number of epochs with no improvement before training is stopped
 
-EPS = 0.1
+EPS = 10
 
-OPEN = 0
+EPOCHS = 10
+
+
 
 def rmspe(sales, prediction):
     return np.sqrt(np.mean(np.square(
@@ -32,7 +37,7 @@ def tf_rmspe(sales, prediction):
     print("sales", sales.shape, "prediction", prediction.shape)
     return tf.sqrt(tf.reduce_mean(tf.square(
         (prediction - sales + EPS) / (sales + EPS)
-    )))
+    ), axis=1))
 
 
 def early_stopping_debug(train_step, val_losses, epochs):
@@ -63,18 +68,9 @@ class AbstractForecaster(ABC):
         self.trained = False
         pass
 
-    def fit(self, data):
-        """
-            Function to fit new models.
-        :return: trained model
-        """
-        try:
-            X, y = check_X_y(data.X_val, data.y_val, y_numeric=True, warn_on_dtype=True)
-        except Exception as e:
-            # this check fails for lstm shaped input, so let's print it but allow it
-            print("check_X_y:", type(e), e)
+    def fit(self, data, **kwargs):
         self.trained = True
-        return self._train(data)
+        return self._train(data, **kwargs)
 
     @abstractmethod
     def _train(self, data):
@@ -88,27 +84,22 @@ class AbstractForecaster(ABC):
             Predict y values for input matrix X
             y.shape = (#samples, 1)
         """
-        assert self.trained, "Model is not trained cannot predict"
+        # assert self.trained, "Model is not trained cannot predict"
         #  X = check_array(X)
         y = self._decision_function(X)
 
-        try:
-            assert (y == y * X[:, OPEN]).all()
-        except AssertionError:
-            print("({}) Warning: Original prediction not zero for rows where stores are closed")
-        except Exception as e:
-            print(type(e), e); pdb.set_trace()
+        # try:
+        #     if len(X.shape) == 2:  # feed forward data
+        #         assert (y == y*X[:,  None]).all()
+        #         filter_open = X[:, None]
+        #     elif len(X.shape) == 3:  # lstm data
+        #         filter_open = X[:, -1, None]
+        #     else:
+        #         raise Warning("X shape is weird")
+        # except AssertionError:
+        #     print("({}) Warning: Original prediction not zero for rows where stores are closed")
 
-        if len(X.shape) == 2:  # feed forward data
-            filter_open = X[:, OPEN]
-        elif len(X.shape) == 3:  # lstm data
-            filter_open = X[:, -1, OPEN]
-        else:
-            raise Warning("X shape is weird")
-            pdb.set_trace()
-
-        return y * filter_open
-
+        return y
 
     @abstractmethod
     def _decision_function(self, X):
@@ -146,7 +137,7 @@ class AbstractForecaster(ABC):
         return rmspe(y, p)
 
     def save(self):
-        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
+        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
         joblib.dump(self, os.path.join(MODEL_DIR, file_name))
         return os.path.join(MODEL_DIR, file_name)
 

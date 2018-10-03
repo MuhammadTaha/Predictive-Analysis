@@ -4,10 +4,9 @@ import pdb
 import numpy as np
 import os
 import random
-import tensorflow as tf
 
 try:
-    from src.forecaster import lstm, FeedForwardNN1, LinearRegressor, SVRForecaster, NaiveForecaster, FeedForwardKeras, LinearKeras
+    from src.forecaster import lstm
     from src.forecaster.XGBForecaster import XGBForecaster
     from src.data import FeedForwardData
     from src.data.lstm_data import LSTMData
@@ -15,16 +14,20 @@ except:
     from forecaster import *
     from data import *
 
-MODELS = [FeedForwardKeras, LinearKeras]
-# MODELS = [LSTMForecaster, SVRForecaster, XGBForecaster, FeedForwardKeras, LinearKeras]
+# MODELS = [XGBForecaster, FeedForwardNN1,
+#           LinearRegressor, SVRForecaster,
+#           NaiveForecaster]
+# [LSTMForecaster, SVRForecaster, NaiveForecaster, XGBForecaster, LinearRegressor, FeedForwardNN1]
+MODELS = [lstm.LSTMForecaster] #FeedForwardNN1  NaiveForecaster,
 RESULT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../model_selection_results")
 
 os.makedirs(RESULT_DIR, exist_ok=True)
 
 feed_forward_data = FeedForwardData()
-lstm_data = LSTMData(is_debug=True, update_disk=True, update_cache=True, timesteps_per_point=10)
+lstm_data = LSTMData(is_debug=True, update_disk=True, timesteps_per_point=10)
+# lstm_data = None
 
-NUM_POINTS_FOR_ESTIMATE = 2000
+NUM_POINTS_FOR_ESTIMATE = feed_forward_data.data.shape[0]
 
 
 def estimate_score(model_class, params):
@@ -40,26 +43,15 @@ def estimate_score(model_class, params):
     points = np.random.permutation(points)
     split = int(0.7 * len(points))
 
-    print("Train Test Split:")
     data.train_test_split(set(points[:split]), set(points[split:]))
 
-    if hasattr(model, "sess"):
-        sess = tf.Session()
-        model.sess = sess
-        sess.run(tf.global_variables_initializer())
-
     model.fit(data)
-
-    score = float(model.score(data.X_val, data.y_val))
-    print("Final Score: ", score, "\nAvg prediction: ", np.mean(model.predict(data.X_val)), "\nAvg sales: ", np.mean(data.y_val))
-
-    if hasattr(model, "sess"):
-        sess.close()
-
+    x_val, y_val = data.all_test_data()
+    score = model.score(x_val, y_val)
     return score
 
 
-def best_hyperparams_and_score(model_class, num_combinations=1):
+def best_hyperparams_and_score(model_class, num_combinations=10):
     """
     Creates a <model_class.__name__>-hyperparameters.json :
     [ {"params": <params>, "score": <score>}, ...]
@@ -93,14 +85,9 @@ def best_hyperparams_and_score(model_class, num_combinations=1):
     result_path = os.path.join(RESULT_DIR, "{}-hyperparameters.json".format(model_class.__name__))
     #  save the results
     with open(result_path, "w") as f:
-        try:
-            result = json.dumps(result)
-            print("result to be dumped", result)
-            f.write(result)
-        except Exception as e:
-            print(type(e), e)
-            pdb.set_trace()
-            print(result)
+        result = json.dumps(result)
+        print("result to be dumped", result)
+        f.write(result)
 
     return best_params, best_score
 
@@ -146,16 +133,7 @@ def model_selection(extend_existing_results=True):
                                for class_name in result.keys()
                                if result[class_name]["score"] == best_score][0]
     model_class = [model_class for model_class in MODELS if model_class.__name__ == best_class][0]
-
-    try:
-        model = model_class(features_count=feed_forward_data.features_count, **best_params)
-    except:
-        try:
-            model = model_class(**best_params)
-        except Exception as e:
-            print(type(e), e)
-            pdb.set_trace()
-
+    model = model_class(**best_params)
     return model
 
 
