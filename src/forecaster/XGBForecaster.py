@@ -1,5 +1,5 @@
 # from sklearn.cross_validation import train_test_split
-
+import sklearn as sk
 import xgboost as xgb
 
 from src.data import FeedForwardData
@@ -11,25 +11,29 @@ except ModuleNotFoundError:
     from .abstract_forecaster import *
 
 
-class XGBForecaster(AbstractForecaster):
+class XGBForecaster(AbstractForecaster, sk.base.BaseEstimator):
     def _build(self):
         pass
 
     params_grid = {
-        'learning_rate': np.random.uniform(0.01, 0.3, 2),
-        'max_depth': list(range(10, 20, 2)),
-        'gamma': np.random.uniform(0, 10, 2),
-        'reg_alpha': np.random.exponential(1, 10)}
+        'min_child_weight': [1, 5, 10],
+        'gamma': [0.5, 1, 1.5, 2, 5],
+        'subsample': [0.6, 0.8, 1.0],
+        'colsample_bytree': [0.6, 0.8, 1.0],
+        'max_depth': [3, 4, 5]
+    }
+    # params_grid = {
+    #     'learning_rate': np.random.uniform(0.01, 0.3, 2),
+    #     'max_depth': list(range(10, 20, 2)),
+    #     'gamma': np.random.uniform(0, 10, 2),
+    #     'reg_alpha': np.random.exponential(1, 10)}
 
     initial_params = {
-        'n_estimators': 500,
+        'n_estimators': 800,
+        "learning_rate": .2,
         'max_depth': 12,
-        'objective': 'reg:linear',
-        'subsample': 0.8,
-        'colsample_bytree': 0.85,
+        'objective': "reg:logistic",
         'silent': True,
-        "booster": "gbtree",
-        "eta": 0.02
     }
 
     n_rounds = 3000

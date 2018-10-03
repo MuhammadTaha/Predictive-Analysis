@@ -26,6 +26,7 @@ EPS = 10
 EPOCHS = 10
 
 
+
 def rmspe(sales, prediction):
     return np.sqrt(np.mean(np.square(
         (prediction - sales + EPS) / (sales + EPS)
@@ -67,9 +68,9 @@ class AbstractForecaster(ABC):
         self.trained = False
         pass
 
-    def fit(self, data):
+    def fit(self, data, **kwargs):
         self.trained = True
-        return self._train(data)
+        return self._train(data, **kwargs)
 
     @abstractmethod
     def _train(self, data):

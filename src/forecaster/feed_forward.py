@@ -1,7 +1,8 @@
+import keras
 from keras import Sequential
 from keras.engine.saving import load_model
-from keras.layers import Activation, Dense, Dropout
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from keras.layers import Dense, Dropout
+from sklearn.metrics import mean_absolute_error
 
 try:
     from src.forecaster.abstract_forecaster import *
@@ -21,6 +22,13 @@ def bias_variable(shape): return tf.Variable(tf.constant(0.1, shape=shape))
 
 
 class FeedForward(AbstractForecaster):
+    params_grid = {
+        "n_neurons": np.arange(50, 200, 10),
+        "activation": ['tanh', "relu", "sigmoid"],
+        "drop_out": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "n_layers": [2, 3, 4],
+        "regularizer": ["l1", "l2"]
+    }
     """
         Abstract class for feed forward models
         This class specifies:
@@ -34,7 +42,7 @@ class FeedForward(AbstractForecaster):
         used by this class)
     """
 
-    def __init__(self, features_count=15, sess=None, plot_dir=None, batch_size=100):
+    def __init__(self, features_count=15, sess=None, plot_dir=None, batch_size=100, **kwargs):
         """
         :param features_count: #features of X
         :param sess: tf.Session to use, per default, a new session will be created.
@@ -50,7 +58,11 @@ class FeedForward(AbstractForecaster):
         self.features_count = features_count
 
         self.sess = sess if sess is not None else tf.Session()
-
+        self.n_neurons = kwargs['n_neurons']
+        self.activation = kwargs['activation']
+        self.drop_out = kwargs['drop_out']
+        self.n_layer = kwargs['n_layers']
+        self.regularizer = kwargs['regularizer']
         self._build()
 
     def _predict_zero_if_closed(self):
@@ -65,9 +77,9 @@ class FeedForward(AbstractForecaster):
     def _decision_function(self, X):
         return np.squeeze(self.model.predict(X))
 
-    def _train(self, data):
+    def _train(self, data, **kwargs):
         X, y = data.all_train_data()
-        history = self.model.fit(X, y, validation_split=0.2, epochs=EPOCHS)
+        self.model.fit(X, y, validation_split=0.2, epochs=kwargs["epochs"])
 
         # if self.plot_dir is not None:
         #     self._train_plot(train_losses, val_losses, val_times)
@@ -92,10 +104,17 @@ class FeedForward(AbstractForecaster):
     def load_model(file_name):
         return load_model(file_name)
 
-    def _build(self):
+    def _build(self, ):
         self.model = Sequential()
-        self.model.add(Dense(output_dim=150, input_shape=(self.features_count,)))
-        self.model.add(Dropout(0.2))
-        self.model.add(Activation('tanh'))
-        self.model.add(Dense(output_dim=1))
-        self.model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mae', 'acc'])
+        for _ in range(self.n_layer):
+            if _ == 0:
+                self.model.add(
+                    Dense(units=self.n_neurons, input_shape=(self.features_count,),
+                          kernel_regularizer=self.regularizer,
+                          activation=self.activation))
+            else:
+                self.model.add(
+                    Dense(units=self.n_neurons, kernel_regularizer=self.regularizer, activation=self.activation))
+            self.model.add(Dropout(self.drop_out))
+        self.model.add(Dense(units=1))
+        self.model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mae'])

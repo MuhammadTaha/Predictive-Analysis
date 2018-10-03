@@ -8,11 +8,11 @@ import numpy as np
 class SVRForecaster(AbstractForecaster):
     params_grid = {
         "epsilon": np.logspace(1, 2, 20),
+        "gamma": np.logspace(-5, 5, 20),
         "C": np.linspace(1, 1000, 20)
     }
 
     def __init__(self, epsilon=5, gamma='auto', C=1.):
-        print(epsilon, gamma, C)
         self.svr = SVR(epsilon=epsilon, gamma=gamma, C=C)
 
     def _decision_function(self, X):
