@@ -1,17 +1,15 @@
-import keras
-from keras import Sequential
+from keras import Sequential, callbacks
 from keras.engine.saving import load_model
-from keras.layers import Dense, Dropout
+from keras.layers import BatchNormalization, Dense
+from sklearn.base import BaseEstimator
 from sklearn.metrics import mean_absolute_error
 
 try:
     from src.forecaster.abstract_forecaster import *
 except ModuleNotFoundError:
     from .abstract_forecaster import *
-import pdb
 import tensorflow as tf
 import numpy as np
-from matplotlib import pyplot as plt
 
 
 def weight_variable(shape):
@@ -23,26 +21,14 @@ def bias_variable(shape): return tf.Variable(tf.constant(0.1, shape=shape))
 
 class FeedForward(AbstractForecaster):
     params_grid = {
-        "n_neurons": np.arange(50, 200, 10),
-        "activation": ['tanh', "relu", "sigmoid"],
-        "drop_out": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
-        "n_layers": [2, 3, 4],
-        "regularizer": ["l1", "l2"]
+        "units": np.linspace(100, 200, num=5).astype(int),
+        "activation": ["tanh", "sigmoid"],
+        # "drop_out": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+        "n_layers": [1, 2, 3, 4, 5],
+        "kernel_regularizer": ["l1_l2", "l1", "l2", None]
     }
-    """
-        Abstract class for feed forward models
-        This class specifies:
-        - how to handle the session
-        - adds save/restore logic for tf.session
-        - placeholders, loss and train_step should always have this name
 
-        The session must be initialized from outside.
-        If we do it from here, we would possibly reinitialize variables that were not defined here,
-        eg we would destroy another trained model. (I couldn't find a way to initialize only the variables
-        used by this class)
-    """
-
-    def __init__(self, features_count=15, sess=None, plot_dir=None, batch_size=100, **kwargs):
+    def __init__(self, features_count=FEATURE_COUNT, **kwargs):
         """
         :param features_count: #features of X
         :param sess: tf.Session to use, per default, a new session will be created.
@@ -51,27 +37,15 @@ class FeedForward(AbstractForecaster):
         :param batch_size: for the train batches
         """
         super().__init__()
-        self.plot_dir = plot_dir
-        if plot_dir is not None:
-            os.makedirs(plot_dir, exist_ok=True)
-        self.batch_size = batch_size
         self.features_count = features_count
+        if not self.loaded:
+            if 'n_layers' in kwargs:
+                self.n_layer = kwargs.pop("n_layers")
 
-        self.sess = sess if sess is not None else tf.Session()
-        self.n_neurons = kwargs['n_neurons']
-        self.activation = kwargs['activation']
-        self.drop_out = kwargs['drop_out']
-        self.n_layer = kwargs['n_layers']
-        self.regularizer = kwargs['regularizer']
-        self._build()
-
-    def _predict_zero_if_closed(self):
-        self.output *= self.input * tf.constant(
-            np.eye(self.input.shape[1])[None, ...]  # e_18 in shape (1 <broadcasts to #samples>, features_count)
-            , dtype=tf.float32)
+            self.params = kwargs
+            self._build()
 
     def score(self, X, y):
-        print(mean_absolute_error(y, self._decision_function(X)))
         return mean_absolute_error(y, self._decision_function(X))
 
     def _decision_function(self, X):
@@ -79,26 +53,15 @@ class FeedForward(AbstractForecaster):
 
     def _train(self, data, **kwargs):
         X, y = data.all_train_data()
-        self.model.fit(X, y, validation_split=0.2, epochs=kwargs["epochs"])
+        early_callback = callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=0, mode='auto',
+                                                 baseline=None, )
+        history = self.model.fit(X, y, validation_split=0.2, epochs=kwargs["epochs"], callbacks=[early_callback])
 
-        # if self.plot_dir is not None:
-        #     self._train_plot(train_losses, val_losses, val_times)
+        return history
 
-    def _train_plot(self, train_losses, val_losses, val_times):
-        pdb.set_trace()
-        plt.plot(range(len(train_losses)), train_losses, label="Train loss")
-        plt.plot(val_times, val_losses, "o", label="Val loss")
-        plt.savefig(self.plot_dir + "/training.png")
-        plt.clf()
-
-    def save(self):
-        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-        # self.saver.save(self.sess, model_path + "_params")
+    def save(self, trial):
+        file_name = "{}-{}".format(self.__class__.__name__, trial)
         self.model.save(os.path.join(MODEL_DIR, file_name))
-
-    def load_params(self, file_name):
-        self.saver.restore(self.sess, file_name)
-        self.trained = True
 
     @staticmethod
     def load_model(file_name):
@@ -106,15 +69,13 @@ class FeedForward(AbstractForecaster):
 
     def _build(self, ):
         self.model = Sequential()
+        self.model.add(BatchNormalization(axis=1))
         for _ in range(self.n_layer):
             if _ == 0:
                 self.model.add(
-                    Dense(units=self.n_neurons, input_shape=(self.features_count,),
-                          kernel_regularizer=self.regularizer,
-                          activation=self.activation))
+                    Dense(input_shape=(self.features_count,), **self.params, ))
             else:
-                self.model.add(
-                    Dense(units=self.n_neurons, kernel_regularizer=self.regularizer, activation=self.activation))
-            self.model.add(Dropout(self.drop_out))
-        self.model.add(Dense(units=1))
+                self.model.add(Dense(**self.params))
+                # self.model.add(Dropout(self.drop_out))
+        self.model.add(Dense(units=1, activation="relu"))
         self.model.compile(loss='mean_absolute_error', optimizer='adam', metrics=['mae'])

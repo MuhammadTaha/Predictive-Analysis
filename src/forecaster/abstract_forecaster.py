@@ -65,8 +65,11 @@ class AbstractForecaster(ABC):
         """
             Model initialization
         """
-        self.trained = False
-        pass
+        if 'load' in kwargs:
+            self.model = self.load_model(kwargs['filename'])
+            self.loaded = True
+        else:
+            self.loaded = False
 
     def fit(self, data, **kwargs):
         self.trained = True
@@ -135,11 +138,6 @@ class AbstractForecaster(ABC):
         """
         p = self.predict(X)
         return rmspe(y, p)
-
-    def save(self):
-        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-        joblib.dump(self, os.path.join(MODEL_DIR, file_name))
-        return os.path.join(MODEL_DIR, file_name)
 
     @staticmethod
     def load_model(file_name):

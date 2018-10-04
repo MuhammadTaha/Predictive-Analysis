@@ -1,5 +1,4 @@
 # from sklearn.cross_validation import train_test_split
-import sklearn as sk
 import xgboost as xgb
 
 from src.data import FeedForwardData
@@ -11,57 +10,48 @@ except ModuleNotFoundError:
     from .abstract_forecaster import *
 
 
-class XGBForecaster(AbstractForecaster, sk.base.BaseEstimator):
+class XGBForecaster(AbstractForecaster):
     def _build(self):
         pass
 
     params_grid = {
-        'min_child_weight': [1, 5, 10],
-        'gamma': [0.5, 1, 1.5, 2, 5],
-        'subsample': [0.6, 0.8, 1.0],
-        'colsample_bytree': [0.6, 0.8, 1.0],
-        'max_depth': [3, 4, 5]
-    }
-    # params_grid = {
-    #     'learning_rate': np.random.uniform(0.01, 0.3, 2),
-    #     'max_depth': list(range(10, 20, 2)),
-    #     'gamma': np.random.uniform(0, 10, 2),
-    #     'reg_alpha': np.random.exponential(1, 10)}
-
-    initial_params = {
-        'n_estimators': 800,
-        "learning_rate": .2,
-        'max_depth': 12,
-        'objective': "reg:logistic",
-        'silent': True,
+        'n_estimators': np.linspace(500, 1000, num=5).astype(int),
+        'max_depth': np.linspace(10, 20, num=5).astype(int),
+        "eta": np.linspace(0.1, 0.3, num=5),
+        "objective": ["gpu:reg:linear"],
+        "booster": ["gbtree"],
+        "subsample": np.linspace(0.7, 1.0, 5),
+        "colsample_bytree": [0.7],
+        "silent": [1]
     }
 
-    n_rounds = 3000
+    # initial_params = {
+    #     'n_estimators': 800,
+    #     "learning_rate": .2,
+    #     'objective': "gpu:reg:linear",
+    #     'silent': True,
+    #     "tree_method": "gpu_hist"
+    # }
+    #
     early_stopping_rounds = 100
 
-    def __init__(self, load=False, **kwargs):
-        if 'params' in kwargs:
-            self.params = kwargs['params']
-        else:
-            self.params = self.initial_params
-        if load:
-            self.model = xgb.Booster(self.params)  # init model
-            self.model.load_model(os.path.join(MODEL_DIR, kwargs['file_path']))
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.params = kwargs
 
-    def _train(self, data):
+    def _train(self, data, **kwargs):
         X, y = data.all_train_data()
-        # X_train, X_test = train_test_split(X, test_size=0.05)
         split = int(len(X) * 0.05)
         X_train, y_train = data.all_train_data()
         dtrain = xgb.DMatrix(X_train[split:], y_train[split:])
         dtest = xgb.DMatrix(X_train[:split], y_train[:split])
         watchlist = [(dtrain, 'train'), (dtest, 'eval')]
-        self.model = xgb.train(self.params, dtrain, self.n_rounds, evals=watchlist, early_stopping_rounds=100,
+        self.model = xgb.train(self.params, dtrain, kwargs['n_rounds'], evals=watchlist, early_stopping_rounds=100,
                                feval=self.rmspe_xg)
-        self.save()
+        # return self.model.__dict__
 
-    def save(self):
-        file_name = self.__class__.__name__ + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+    def save(self, trial):
+        file_name = "{}-{}".format(self.__class__.__name__, trial)
         self.model.save_model(os.path.join(MODEL_DIR, file_name))
 
     # def load_model(self, file_name):
@@ -83,14 +73,33 @@ class XGBForecaster(AbstractForecaster, sk.base.BaseEstimator):
     #     return {**search_model.best_params_, **self.initial_params}
 
     @staticmethod
-    def rmspe(y, yhat):
-        return rmspe(y, yhat)
+    def ToWeight(y):
+        w = np.zeros(y.shape, dtype=float)
+        ind = y != 0
+        w[ind] = 1. / (y[ind] ** 2)
+        return w
+
+    @staticmethod
+    def rmspe(yhat, y):
+        w = XGBForecaster.ToWeight(y)
+        rmspe = np.sqrt(np.mean(w * (y - yhat) ** 2))
+        return rmspe
 
     @staticmethod
     def rmspe_xg(yhat, y):
-        y = np.expm1(y.get_label())
-        yhat = np.expm1(yhat)
-        return "rmspe", XGBForecaster.rmspe(y, yhat)
+        # y = y.values
+        y = y.get_label()
+        y = np.exp(y) - 1
+        yhat = np.exp(yhat) - 1
+        w = XGBForecaster.ToWeight(y)
+        rmspe = np.sqrt(np.mean(w * (y - yhat) ** 2))
+        return "rmspe", rmspe
+
+    @staticmethod
+    def load_model(file_name):
+        model = xgb.Booster({})  # init model
+        model.load_model(file_name)
+        return model
 
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ DATA_PICKLE_FILE = 'EXTRACTED_FEATURES'
 
 
 class DataExtraction:
-    def __init__(self, data_dir=DATA_DIR, toy=False, keep_zero_sales=False):
+    def __init__(self, data_dir=DATA_DIR, train_path=None, test_path=None):
         """
         :param data_dir: location of data.zip
         :param toy: if True, take only data of the first 10 stores for model development
@@ -31,41 +31,38 @@ class DataExtraction:
         self.data_dir = data_dir
 
         # check if files are extracted
-        if not set(os.listdir(data_dir)) >= set(["sample_submission.csv", "store.csv", "test.csv", "train.csv"]):
-            print("unzip data.zip")
-            DataExtraction.extract(data_dir + "/data.zip", data_dir)
+        if train_path and test_path:
+            self.final_test = pd.read_csv(test_path)
+            self.data = pd.read_csv(train_path)
+        else:
+            # load into pandas
+            self.store = pd.read_csv(data_dir + "/store.csv")
+            self.final_test = pd.read_csv(data_dir + "/test.csv", parse_dates=['Date'], )
+            self.train = pd.read_csv(data_dir + "/train.csv", parse_dates=['Date'], )
 
-        # load into pandas
-        self.store = pd.read_csv(data_dir + "/store.csv")
-        self.final_test = pd.read_csv(data_dir + "/test.csv", parse_dates=['Date'], )
-        self.train = pd.read_csv(data_dir + "/train.csv", parse_dates=['Date'], )
+            self._competition_distance_median = self.store['CompetitionDistance'].median()
 
-        self._competition_distance_median = self.store['CompetitionDistance'].median()
+            # clean stores with no sales and closed
 
-        if toy:
-            self.train = self.train.loc[self.train.Store < 3]
-
-        # clean stores with no sales and closed
-
-        # if not keep_zero_sales:
-        #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
+            # if not keep_zero_sales:
+            #    self.train = self.train[(self.train["Open"] != 0) & (self.train['Sales'] != 0)]
 
 
-        self.prepare_data_for_extraction()
-        self.apply_feature_transformation()
-        self.apply_feature_transformation_test()
+            self.prepare_data_for_extraction()
+            self.apply_feature_transformation()
+            self.apply_feature_transformation_test()
 
-        self.time_count = self.train.shape[0]
-        self.store_count = self.store.shape[0]
-        self.date_keys = sorted(self.train.Date.unique())
-        self.features_count = self._extract_rows([1])[0].shape[1]
-        self.p_val = 0.2
-        self.p_train = 0.8
+            self.time_count = self.train.shape[0]
+            self.store_count = self.store.shape[0]
+            self.date_keys = sorted(self.train.Date.unique())
+            self.features_count = self._extract_rows([1])[0].shape[1]
+            self.p_val = 0.2
+            self.p_train = 0.8
 
     def prepare_data_for_extraction(self):
         # Dropping features with high missing values percentage
-        self.store.drop(['CompetitionOpenSinceMonth', 'CompetitionOpenSinceYear', 'Promo2SinceWeek',
-                         'Promo2SinceYear', 'PromoInterval'], axis=1, inplace=True)
+        # self.store.drop(['CompetitionOpenSinceMonth', 'CompetitionOpenSinceYear', 'Promo2SinceWeek',
+        #                  'Promo2SinceYear', 'PromoInterval'], axis=1, inplace=True)
         # replace missing values by median
         self.store.CompetitionDistance.fillna(self._competition_distance_median, inplace=True)
         self.final_test.fillna(1, inplace=True)
@@ -86,7 +83,7 @@ class DataExtraction:
         self.train['Month'] = self.train.Date.dt.month
         self.train['Day'] = self.train.Date.dt.day
         self.train['WeekOfYear'] = self.train.Date.dt.weekofyear
-        self.train.drop('Date', axis=1)
+        # self.train.drop('Date', axis=1)
         self.train.reset_index(inplace=True)
 
         # add dates information test data
@@ -94,9 +91,10 @@ class DataExtraction:
         self.final_test['Month'] = self.final_test.Date.dt.month
         self.final_test['Day'] = self.final_test.Date.dt.day
         self.final_test['WeekOfYear'] = self.final_test.Date.dt.weekofyear
-        self.final_test.drop('Id', axis=1)
-        self.final_test.drop('Date', axis=1)
+        # self.final_test.drop('Id', axis=1)
+        # self.final_test.drop('Date', axis=1)
         self.final_test.reset_index(inplace=True)
+
 
     def _extract_label(self, row_id):
         #  extracts the sales from the specified row
@@ -193,10 +191,16 @@ class DataExtraction:
         # self.data.DayOfWeek = self.data.DayOfWeek.apply(lambda x: np.eye(7)[x - 1])
         self.data.StateHoliday = self.data.StateHoliday.apply(lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
         self.data.Sales = self.data.Sales.apply(lambda x: np.log(x) + 1)
-        sales_avg = self.data[['DayOfWeek', 'Store', 'Sales']].groupby(['DayOfWeek', 'Store']).mean()
-        sales_avg = sales_avg.reset_index()
-        self.sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
-        self.data = pd.merge(self.data, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
+
+        self.data = self.data.sample(frac=1).reset_index(drop=True)
+
+        # adding sales avg
+        # sales_avg = self.data[['DayOfWeek', 'Store', 'Sales']].groupby(['DayOfWeek', 'Store']).mean()
+        # sales_avg = sales_avg.reset_index()
+        # self.sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
+        # self.data = pd.merge(self.data, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
+
+
         #
         # # adding avg sales to data frame
         # sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
@@ -239,8 +243,16 @@ class DataExtraction:
         self.final_test.StateHoliday = self.final_test.StateHoliday.apply(
             lambda x: abcd["d"] if x not in abcd.keys() else abcd[x])
 
-        self.final_test = pd.merge(self.final_test, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
-        self.final_test.fillna(0.0, inplace=True)
+
+        self.final_test = self.final_test.sample(frac=1).reset_index(drop=True)
+
+        # self.final_test = pd.merge(self.final_test, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
+        # self.final_test.fillna(0.0, inplace=True)
+
+
+
+
+
         # self.final_test.Sales = self.final_test.Sales.apply(lambda x: np.log(x) + 1)
         # adding avg sales to data frame
 

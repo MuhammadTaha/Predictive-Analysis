@@ -1,3 +1,5 @@
+from src.data.feature_enum import FEATURES
+
 try:
     from src.data.data_extraction import DataExtraction, DATA_DIR, DATA_PICKLE_FILE
 except ModuleNotFoundError:
@@ -15,13 +17,13 @@ class FeedForwardData(DataExtraction):
         self.is_new_epoch = None
 
     def train_test_split(self, train_point_ids, test_point_ids):
-        self.train_point_ids, self.test_point_ids = train_point_ids, test_point_ids
+        self.train_point_ids, self.test_point_ids = list(train_point_ids), list(test_point_ids)
 
     def all_train_data(self):
-        return self._extract_rows(self.train_point_ids)
+        return self.data[FEATURES].iloc[self.train_point_ids].values, self.data.Sales.iloc[self.train_point_ids].values
 
     def all_test_data(self):
-        return self._extract_rows(self.test_point_ids)
+        return self.data[FEATURES].iloc[self.test_point_ids].values, self.data.Sales.iloc[self.test_point_ids].values
 
     def new_epoch(self):
         self.epochs += 1

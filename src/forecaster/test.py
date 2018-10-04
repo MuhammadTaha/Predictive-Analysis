@@ -76,27 +76,28 @@ def build_features(features, data):
     data['Assortment'] = data['Assortment'].astype(float)
 
 
-# # print("Load the training, test and store data using pandas")
-# train = pd.read_csv("../../data/train.csv",dtype={'StateHoliday':pd.np.string_})
-# test = pd.read_csv("../../data/test.csv",dtype={'StateHoliday':pd.np.string_})
-# store = pd.read_csv("../../data/store.csv",dtype={'StateHoliday':pd.np.string_})
+print("Load the training, test and store data using pandas")
+train = pd.read_csv("../../data/train.csv",dtype={'StateHoliday':pd.np.string_})
+test = pd.read_csv("../../data/test.csv",dtype={'StateHoliday':pd.np.string_})
+store = pd.read_csv("../../data/store.csv",dtype={'StateHoliday':pd.np.string_})
+
+# print("Assume store open, if not provided")
+test.fillna(1, inplace=True)
+
+# print("Consider only open stores for training. Closed stores wont count into the score.")
+train = train[train["Open"] != 0]
+
+# print("Join with store")
+train = pd.merge(train, store, on='Store')
+test = pd.merge(test, store, on='Store')
 #
-# # print("Assume store open, if not provided")
-# test.fillna(1, inplace=True)
-#
-# # print("Consider only open stores for training. Closed stores wont count into the score.")
-# train = train[train["Open"] != 0]
-#
-# # print("Join with store")
-# train = pd.merge(train, store, on='Store')
-# test = pd.merge(test, store, on='Store')
-#
-# features = []
+features = []
 #
 # # print("augment features")
-# build_features(features, train)
-# build_features([], test)
-# print(features)
+build_features(features, train)
+build_features([], test)
+
+print(features)
 
 def f1():
     features = FEATURES
@@ -107,7 +108,7 @@ def f1():
     eta = 0.02
     ntrees = 3020
 
-    params = {"objective": "reg:linear",
+    params = {"objective": "gpu:reg:linear",
               "booster": "gbtree",
               "eta": eta,
               "max_depth": depth,
@@ -129,8 +130,8 @@ def f1():
 
     # vsize = 10000
     # X_train, X_test = train.head(len(train) - vsize), train.tail(vsize)
-    dtrain = xgb.DMatrix(X_train[features], np.log(X_train["Sales"] + 1))
-    dvalid = xgb.DMatrix(X_test[features], np.log(X_test["Sales"] + 1))
+    dtrain = xgb.DMatrix(X_train[features], X_train["Sales"])
+    dvalid = xgb.DMatrix(X_test[features], X_test["Sales"])
     dtest = xgb.DMatrix(test[features])
     watchlist = [(dvalid, 'eval'), (dtrain, 'train')]
     gbm = xgb.train(params, dtrain, ntrees, evals=watchlist, early_stopping_rounds=100, feval=rmspe_xg)
@@ -161,8 +162,8 @@ def f1():
 
     print(features)
     print(params)
-    print("../../data/xgb_d%s_eta%s_ntree%s.csv" % (str(depth), str(eta), str(ntrees)))
-    submission.to_csv("../../data/xgb_d%s_eta%s_ntree%s.csv" % (str(depth), str(eta), str(ntrees)), index=False)
+    print("/home/mshaban/DeployedProjects/Predictive-Analysis/models/results/xgb_d%s_eta%s_ntree%s.csv" % (str(depth), str(eta), str(ntrees)))
+    submission.to_csv("/home/mshaban/DeployedProjects/Predictive-Analysis/models/results/xgb_d%s_eta%s_ntree%s.csv" % (str(depth), str(eta), str(ntrees)), index=False)
 
 def f2():
 
@@ -187,3 +188,4 @@ def f2():
     build_features(features, train)
     build_features([], test)
     print(features)
+f1()

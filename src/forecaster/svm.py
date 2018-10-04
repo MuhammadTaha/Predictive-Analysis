@@ -7,25 +7,24 @@ import numpy as np
 
 class SVRForecaster(AbstractForecaster):
     params_grid = {
-        "epsilon": np.logspace(1, 2, 20),
-        "gamma": np.logspace(-5, 5, 20),
-        "C": np.linspace(1, 1000, 20)
+        # "epsilon": np.logspace(1, 2, 20),
+        # "gamma": np.logspace(-5, 5, 20),
+        # "C": np.linspace(1, 1000, 20)
     }
 
     def __init__(self, epsilon=5, gamma='auto', C=1.):
-        self.svr = SVR(epsilon=epsilon, gamma=gamma, C=C)
+        self.svr = SVR(kernel='poly', C=1e3, degree=3)
 
     def _decision_function(self, X):
-        return self.svr.predict(X)
+        X_norm = X/self.std
+        return self.svr.predict(X_norm)
 
-    def _train(self, data):
+    def _train(self, data, **kwargs):
+
         X, y = data.all_train_data()
-
-        self.svr.fit(X, y)
-
-    def fit(self, data):
-        X, y = data.all_train_data()
-        X_norm = X/np.std(X, axis=1, keepdims=True)
+        self.std = np.std(X, axis=0, keepdims=True)
+        self.std = np.where(self.std == 0, 1, self.std)
+        X_norm = X / self.std
         self.svr.fit(X_norm, y)
 
     def _build(self):

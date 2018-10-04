@@ -1,13 +1,15 @@
 import keras
 import numpy as np
+import os
 import tensorflow as tf
 import tensorflow_probability as tfp
 from keras import Sequential, backend as K
+from keras.engine.saving import load_model
 from keras.engine.topology import Layer
-from keras.layers import Dense, Dropout
+from keras.layers import BatchNormalization, Dense
 from keras.optimizers import Adam
-from sklearn.metrics import mean_absolute_error
 
+from src.forecaster import MODEL_DIR
 from src.forecaster.feed_forward import FeedForward
 
 tfd = tfp.distributions
@@ -145,7 +147,19 @@ def output_layer(args):
 
 
 class MDNetwork(FeedForward):
-    MDN_COMPONENTS = 5
+    params_grid = {
+        "units": np.linspace(100, 200, num=5).astype(int),
+        "activation": ["tanh", "sigmoid"],
+        "kernel_regularizer": ["l1", "l2", "l1_l2", None],
+        "n_layers": [2, 3, 4, 5],
+        "MDN_COMPONENTS": np.linspace(1, 5, 5).astype(int)
+    }
+    MDN_OUTPUT_DIM = 1
+
+    def __init__(self, **kwargs):
+        if 'MDN_COMPONENTS' in kwargs:
+            self.MDN_COMPONENTS = kwargs.pop('MDN_COMPONENTS')
+        super(MDNetwork, self).__init__(**kwargs)
 
     def _build(self):
         """
@@ -162,46 +176,45 @@ class MDNetwork(FeedForward):
         :return: keras model of output dimension (mdn_components * (mdn_output_dim + 2), )
         """
         # Network configs
-        dropout_rate = .5
-
-        learning_rate = 0.001
-        n_hidden_units = 50
-
         learning_rate = 0.01
-        MDN_OUTPUT_DIM = 1
 
         self.model = Sequential()
-        self.model.add(Dense(output_dim=50, input_shape=(self.features_count,), activation='tanh'))
-        self.model.add(Dense(output_dim=50, activation='relu'))
-        self.model.add(Dropout(0.2))
-        self.model.add(MDN(MDN_OUTPUT_DIM, self.MDN_COMPONENTS))
-        self.model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mae', 'acc'])
 
-        # model = Model(outputs=output_layer)
-        self.model.compile(loss=get_mixture_loss_func(MDN_OUTPUT_DIM, self.MDN_COMPONENTS),
-                           optimizer=Adam(learning_rate), metrics=['mae', 'acc'])
+        for _ in range(self.n_layer):
+            if _ == 0:
+                self.model.add(
+                    Dense(input_shape=(self.features_count,), **self.params, ))
+
+            else:
+                self.model.add(Dense(**self.params))
+                # self.model.add(Dropout(self.drop_out))
+        self.model.add(Dense(units=self.params['units'], activation="relu"))
+        self.model.add(BatchNormalization(axis=1))
+        self.model.add(MDN(self.MDN_OUTPUT_DIM, self.MDN_COMPONENTS))
+        # self.model.add(Dense(input_shape=self.,units=self.MDN_COMPONENTS * 3, activation="relu"))
+        self.model.compile(loss=get_mixture_loss_func(self.MDN_OUTPUT_DIM, self.MDN_COMPONENTS),
+                           optimizer=Adam(learning_rate), metrics=['mae'])
 
     def _decision_function(self, X):
         y_pred = self.model.predict(X)
-        # mus = np.apply_along_axis((lambda a: a[:self.MDN_COMPONENTS]), 1, y_pred)
+        mus = np.apply_along_axis((lambda a: a[:self.MDN_COMPONENTS]), self.MDN_OUTPUT_DIM, y_pred)
         # sigs = np.apply_along_axis((lambda a: a[self.MDN_COMPONENTS:2 * self.MDN_COMPONENTS]), 1, y_pred)
-        # pis = np.apply_along_axis((lambda a: softmax(a[2 * self.MDN_COMPONENTS:])), 1, y_pred)
-        y_pred = np.apply_along_axis(sample_from_output, 1, y_pred, 1, self.MDN_COMPONENTS, temp=1.0).reshape(
-            X.shape[0])
+        pis = np.apply_along_axis((lambda a: softmax(a[2 * self.MDN_COMPONENTS:])), self.MDN_OUTPUT_DIM, y_pred)
 
+        # y_pred = np.apply_along_axis(sample_from_output, 1, y_pred, 1, self.MDN_COMPONENTS, temp=1.0).reshape(
+        #     X.shape[0])
+        y_pred = np.sum(np.multiply(mus, pis), axis=1)
         return y_pred
 
-    def _train(self, data):
-        X, y = data.all_train_data()
-        history = self.model.fit(X, y, validation_split=0.2, epochs=50)
+    @staticmethod
+    def load_model(filename):
+        n_components = int(filename[-1])
+        loaded_model = load_model(filename,
+                                  custom_objects={'MDN': MDN,
+                                                  'loss_func': get_mixture_loss_func(MDNetwork.MDN_OUTPUT_DIM,
+                                                                                     n_components)})
+        return loaded_model
 
-    def score(self, X, y):
-        y_pred = self.model.predict(X)
-        mus = np.apply_along_axis((lambda a: a[:self.MDN_COMPONENTS]), 1, y_pred)
-        sigs = np.apply_along_axis((lambda a: a[self.MDN_COMPONENTS:2 * self.MDN_COMPONENTS]), 1, y_pred)
-        pis = np.apply_along_axis((lambda a: softmax(a[2 * self.MDN_COMPONENTS:])), 1, y_pred)
-        y_pred = np.apply_along_axis(sample_from_output, 1, y_pred, 1, self.MDN_COMPONENTS, temp=1.0).reshape(
-            y.shape)
-        s = np.sum(mus * pis, axis=1)
-        print(mean_absolute_error(y, y_pred), mean_absolute_error(y, s))
-        return mean_absolute_error(y, y_pred)
+    def save(self, trial):
+        file_name = "{}-{}-{}".format(self.__class__.__name__, trial, self.MDN_COMPONENTS)
+        self.model.save(os.path.join(MODEL_DIR, file_name))
