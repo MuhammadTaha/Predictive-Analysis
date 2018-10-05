@@ -1,0 +1,11 @@
+model_name,params,score
+FeedForward,"{'kernel_regularizer': 'l2', 'n_layers': 3, 'activation': 'tanh', 'units': 120}",0.15125443949376083
+FeedForward,"{'kernel_regularizer': None, 'n_layers': 2, 'activation': 'sigmoid', 'units': 160}",0.1791274365975308
+FeedForward,"{'kernel_regularizer': 'l2', 'n_layers': 4, 'activation': 'sigmoid', 'units': 140}",0.1791274365975308
+FeedForward,"{'kernel_regularizer': 'l1_l2', 'n_layers': 4, 'activation': 'tanh', 'units': 120}",0.1791274365975308
+FeedForward,"{'kernel_regularizer': 'l1_l2', 'n_layers': 3, 'activation': 'tanh', 'units': 120}",0.1791274365975308
+FeedForward,"{'kernel_regularizer': None, 'n_layers': 3, 'activation': 'sigmoid', 'units': 140}",0.1791274365975308
+FeedForward,"{'kernel_regularizer': 'l1_l2', 'n_layers': 4, 'activation': 'sigmoid', 'units': 150}",0.1791274365975308
+FeedForward,"{'kernel_regularizer': 'l1', 'n_layers': 3, 'activation': 'tanh', 'units': 160}",0.1791274365975308
+FeedForward,"{'kernel_regularizer': 'l2', 'n_layers': 2, 'activation': 'sigmoid', 'units': 140}",0.1791274365975308
+FeedForward,"{'kernel_regularizer': 'l1_l2', 'n_layers': 3, 'activation': 'tanh', 'units': 140}",0.1791274365975308

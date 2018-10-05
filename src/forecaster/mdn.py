@@ -4,12 +4,13 @@ import os
 import tensorflow as tf
 import tensorflow_probability as tfp
 from keras import Sequential, backend as K
+from keras.callbacks import Callback
 from keras.engine.saving import load_model
 from keras.engine.topology import Layer
 from keras.layers import BatchNormalization, Dense
 from keras.optimizers import Adam
 
-from src.forecaster import MODEL_DIR
+from src.forecaster import MODEL_DIR, callbacks
 from src.forecaster.feed_forward import FeedForward
 
 tfd = tfp.distributions
@@ -146,6 +147,25 @@ def output_layer(args):
     pass
 
 
+class EarlyStoppingByLossVal(Callback):
+    def __init__(self, monitor='loss', value=0.00001, verbose=0):
+        super(Callback, self).__init__()
+        self.monitor = monitor
+        self.value = value
+        self.verbose = verbose
+
+    def on_epoch_end(self, epoch, logs={}):
+        current = logs.get(self.monitor)
+        if current == np.nan:
+            print("Early stopping because of NAN in {}".format(self.monitor))
+            self.model.stop_training = True
+
+        # if current < self.value:
+        #     if self.verbose > 0:
+        #         print("Epoch %05d: early stopping THR" % epoch)
+        #     self.model.stop_training = True
+
+
 class MDNetwork(FeedForward):
     params_grid = {
         "units": np.linspace(120, 160, num=5).astype(int),
@@ -179,7 +199,7 @@ class MDNetwork(FeedForward):
         learning_rate = 0.01
 
         self.model = Sequential()
-        self.model.add(BatchNormalization(axis=1))
+        # self.model.add(BatchNormalization(axis=1))
         for _ in range(self.n_layer):
             if _ == 0:
                 self.model.add(
@@ -189,7 +209,7 @@ class MDNetwork(FeedForward):
                 self.model.add(Dense(**self.params))
                 # self.model.add(Dropout(self.drop_out))
         self.model.add(Dense(units=self.params['units'], activation="relu"))
-        self.model.add(BatchNormalization(axis=1))
+        # self.model.add(BatchNormalization(axis=1))
         self.model.add(MDN(self.MDN_OUTPUT_DIM, self.MDN_COMPONENTS))
         # self.model.add(Dense(input_shape=self.,units=self.MDN_COMPONENTS * 3, activation="relu"))
         self.model.compile(loss=get_mixture_loss_func(self.MDN_OUTPUT_DIM, self.MDN_COMPONENTS),
@@ -214,6 +234,19 @@ class MDNetwork(FeedForward):
                                                   'loss_func': get_mixture_loss_func(MDNetwork.MDN_OUTPUT_DIM,
                                                                                      n_components)})
         return loaded_model
+
+    def _train(self, X, y, **kwargs):
+        calls = [callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=0, mode='auto',
+                                                  baseline=None, ),
+                          EarlyStoppingByLossVal(monitor='loss', value=0.00001, verbose=1)]
+        # if kwargs["epochs"] > 1000:
+        batch_size = int(X.shape[0] / 50)
+        # else:
+        #     batch_size = int(X.shape[0] / 10)
+        history = self.model.fit(X, y, validation_split=0.2, epochs=kwargs["epochs"], callbacks=calls,
+                                 batch_size=batch_size)
+
+        return history
 
     def save(self, trial):
         file_name = "{}-{}-{}".format(self.__class__.__name__, trial, self.MDN_COMPONENTS)

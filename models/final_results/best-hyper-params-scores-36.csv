@@ -1,0 +1,2 @@
+model,params,score
+FeedForward,"{'kernel_regularizer': 'l2', 'n_layers': 3, 'activation': 'tanh', 'units': 120}",0.1791274365975308

@@ -1,7 +1,5 @@
 # from sklearn.cross_validation import train_test_split
 import xgboost as xgb
-from sklearn.metrics import mean_absolute_error
-from src.data import FeedForwardData
 
 try:
     from src.forecaster.abstract_forecaster import *  # we need more than AbstractForecaster, don't change it to only import that

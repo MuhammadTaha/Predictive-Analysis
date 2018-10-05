@@ -1,5 +1,7 @@
 import argparse
 import time
+import unittest
+
 try:
     from src.data.data_extraction import DataExtraction
     from src.tests import *
@@ -14,29 +16,20 @@ except ModuleNotFoundError:
 
 start_time = time.time()
 
-parser = argparse.ArgumentParser(description="Predictive Analytics for Rossmann Store Sales")
-parser.add_argument("action", choices=["extract", "visualize", "predict", "eval", "test", "try", "modelselection"])
+def parse_extra (parser, namespace):
+  namespaces = []
+  extra = namespace.extra
+  while extra:
+    n = parser.parse_args(extra)
+    extra = n.extra
+    namespaces.append(n)
 
-args = vars(parser.parse_args())
+  return namespaces
 
-if args["action"] == "extract":
-    DataExtraction.extract()
+argparser=argparse.ArgumentParser()
+subparsers = argparser.add_subparsers(help='sub-command help', dest='subparser_name')
 
-if args["action"] == "test":
-    unittest.main(argv=['first-arg-is-ignored'])
-
-if args["action"] == "visualize":
-    visualize_data.main()
-
-if args["action"] == "try":
-    tries.main()
-
-if args["action"] == "modelselection":
-    try:
-        from src import model_selection
-    except:
-        import model_selection
-    model_selection.main()
+parser_a = subparsers.add_parser('command_a', help = "command_a help")
 
 
 print("Finished with execution time {}s".format((time.time() - start_time)))

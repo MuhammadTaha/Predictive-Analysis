@@ -19,9 +19,7 @@ class SVRForecaster(AbstractForecaster):
         X_norm = X/self.std
         return self.svr.predict(X_norm)
 
-    def _train(self, data, **kwargs):
-
-        X, y = data.all_train_data()
+    def _train(self, X, y, **kwargs):
         self.std = np.std(X, axis=0, keepdims=True)
         self.std = np.where(self.std == 0, 1, self.std)
         X_norm = X / self.std

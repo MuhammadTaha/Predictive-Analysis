@@ -20,7 +20,7 @@ FINAL_TRAINING_EPOCHS = 500
 FINAL_TRAINING_ROUNDS = 1000
 
 DATA = DataExtraction(train_path=TRAIN_DATA_CSV, test_path=TEST_DATA_CSV)
-FORECASTERS = [MDNetwork, XGBForecaster, FeedForward]
+FORECASTERS = [MDNetwork, XGBForecaster, FeedForward, SVRForecaster]
 HYPER_PARAMS_SPLIT = int(DATA.data.shape[0] * 0.1)
 # HYPER_PARAMS_SPLIT = 4000
 N_COMBINATION = 10
@@ -39,8 +39,6 @@ params_validation_df = DATA.data[DATA.data.Store == 5]
 def save_results_df(df, file_name):
     df.to_csv(RESULTS_DIR + file_name, index=False)
 
-
-save_results_df(params_validation_df, "params-validation-df-{}.csv".format(TRIAL))
 
 
 # save_results_df(DATA.data, "final_train.csv")
@@ -126,18 +124,20 @@ def load_best_params(forecaster, trial):
     return forecaster_param_scores['params'].iloc[min_score_idx], forecaster_param_scores['score'].min()
 
 
-if __name__ == '__main__':
-    arg = sys.argv[1]
 
+
+if __name__ == '__main__':
     load_trial = False
-    trial = [56]
+    arg = sys.argv[1]
+    if len(sys.argv) > 2:
+        load_trial = True
+        TRIAL = int(sys.argv[2])
     final_model_results = pd.DataFrame.from_dict({"model": [], "score": [], "params": []})
     for _, forecaster in enumerate(FORECASTERS):
         if not arg in forecaster.__name__:
             print(forecaster.__name__)
             continue
         if load_trial:
-            TRIAL = trial[_]
             params = load_best_params(forecaster, TRIAL)[0]
             forecaster = forecaster(**params)
             model, score = run_forecaster(forecaster)
@@ -148,6 +148,7 @@ if __name__ == '__main__':
                                                          ignore_index=True)
 
     save_results_df(final_model_results, "best-hyper-params-scores-{}.csv".format(TRIAL))
+    save_results_df(params_validation_df, "params-validation-df-{}.csv".format(TRIAL))
     # print(final_model_results)
     # trial = 56
     # final_model_results = pd.DataFrame.from_dict({"model": [], "score": [], "params": []})

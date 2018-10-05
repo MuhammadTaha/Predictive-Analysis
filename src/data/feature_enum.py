@@ -16,10 +16,21 @@ PROMO2 = 12
 AVG_SALES = 13
 AVG_CUSTOMER = 14
 
-
-FEATURES = ['Store', 'DayOfWeek','Promo',
+FEATURES = ['Store', 'DayOfWeek', 'Promo',
             'StateHoliday', 'SchoolHoliday', 'StoreType', 'Assortment',
-            'CompetitionDistance','Promo2', 'Year', 'Month', 'Open','Day'] #
+            'CompetitionDistance', 'Promo2', 'Year', 'Month', 'Open', 'Day']  #
+
+ONE_HOT_FEATURES = {"StoreType": ['ST1', 'ST2', 'ST3', 'ST4'], "Assortment": ["AS1", "AS2", "AS3"],
+                    "StateHoliday": ["SH1", "SH2", "SH3", "SH4"],
+                    "DayOfWeek": ["DW1", "DW2", "DW3", "DW4", "DW5", "DW6", "DW7"]}
+
+feature_mat = list(ONE_HOT_FEATURES.values())
+_f = [val for sublist in feature_mat for val in sublist]
+FEATURES.extend(_f)
+
+DROP_FEATURES = ["StoreType", "StateHoliday", "Assortment", "DayOfWeek"]
+for _d in DROP_FEATURES:
+    FEATURES.remove(_d)
 
 FEATURE_COUNT = len(FEATURES)
 abcd = {
