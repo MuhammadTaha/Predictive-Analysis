@@ -1,0 +1,11 @@
+model_name,params,score
+MDNetwork,"{'activation': 'tanh', 'units': 150, 'kernel_regularizer': 'l2', 'n_layers': 4, 'MDN_COMPONENTS': 5}",0.33274795010907104
+MDNetwork,"{'activation': 'sigmoid', 'units': 150, 'kernel_regularizer': None, 'n_layers': 4, 'MDN_COMPONENTS': 3}",0.33284170009796815
+MDNetwork,"{'activation': 'sigmoid', 'units': 150, 'kernel_regularizer': 'l1', 'n_layers': 2, 'MDN_COMPONENTS': 3}",0.3328388143923079
+MDNetwork,"{'activation': 'tanh', 'units': 150, 'kernel_regularizer': 'l1', 'n_layers': 2, 'MDN_COMPONENTS': 2}",0.33273126766970373
+MDNetwork,"{'activation': 'sigmoid', 'units': 130, 'kernel_regularizer': 'l1', 'n_layers': 2, 'MDN_COMPONENTS': 3}",0.33274825419528087
+MDNetwork,"{'activation': 'tanh', 'units': 120, 'kernel_regularizer': 'l1_l2', 'n_layers': 4, 'MDN_COMPONENTS': 5}",0.332732987116333
+MDNetwork,"{'activation': 'tanh', 'units': 130, 'kernel_regularizer': None, 'n_layers': 4, 'MDN_COMPONENTS': 5}",0.33273308795966605
+MDNetwork,"{'activation': 'sigmoid', 'units': 130, 'kernel_regularizer': 'l1', 'n_layers': 3, 'MDN_COMPONENTS': 2}",0.3328292638076522
+MDNetwork,"{'activation': 'tanh', 'units': 120, 'kernel_regularizer': None, 'n_layers': 2, 'MDN_COMPONENTS': 3}",0.3327303345737403
+MDNetwork,"{'activation': 'tanh', 'units': 150, 'kernel_regularizer': None, 'n_layers': 3, 'MDN_COMPONENTS': 5}",0.3327438072735261

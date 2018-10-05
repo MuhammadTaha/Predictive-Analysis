@@ -208,7 +208,7 @@ class MDNetwork(FeedForward):
             else:
                 self.model.add(Dense(**self.params))
                 # self.model.add(Dropout(self.drop_out))
-        self.model.add(Dense(units=self.params['units'], activation="relu"))
+        self.model.add(Dense(units=self.params['units'], activation="softmax"))
         # self.model.add(BatchNormalization(axis=1))
         self.model.add(MDN(self.MDN_OUTPUT_DIM, self.MDN_COMPONENTS))
         # self.model.add(Dense(input_shape=self.,units=self.MDN_COMPONENTS * 3, activation="relu"))

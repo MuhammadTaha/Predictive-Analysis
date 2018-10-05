@@ -1,0 +1,2 @@
+model,params,score
+MDNetwork,"{'activation': 'tanh', 'units': 120, 'kernel_regularizer': None, 'n_layers': 2, 'MDN_COMPONENTS': 3}",0.33295796289562163

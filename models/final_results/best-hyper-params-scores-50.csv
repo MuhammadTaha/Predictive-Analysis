@@ -1,0 +1,2 @@
+model,params,score
+XGBForecaster,"{'subsample': 0.9, 'silent': 1, 'booster': 'gbtree', 'eta': 0.2, 'n_estimators': 600, 'objective': 'gpu:reg:linear', 'colsample_bytree': 0.7, 'max_depth': 10}",0.04573229253861904

@@ -99,7 +99,7 @@ class DataExtraction:
         self.sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
         self.data = pd.merge(self.data, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
 
-        self.data.Sales = self.data.Sales - self.data.AvgSales
+        # self.data.Sales = self.data.Sales - self.data.AvgSales
 
 
         # Transform Hot Encoding Features

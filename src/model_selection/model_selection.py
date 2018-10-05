@@ -87,14 +87,18 @@ def run_forecaster(forecaster):
     forecaster.fit(X, Y, epochs=FINAL_TRAINING_EPOCHS, n_rounds=FINAL_TRAINING_ROUNDS)
     forecaster.save(TRIAL)
     score = forecaster.score(X_test, y_test)
+    print("{}, {}".format(type(forecaster).__name__, score))
+    predict_test(forecaster)
+    return type(forecaster).__name__, score
 
+def predict_test(forecaster):
     # Run to get final kaggle predictions
     test = DATA.final_test
     test_probs = forecaster._decision_function(test[FEATURES].values)
-    # indices = test_probs < 0
-    # test_probs[indices] = 0
+    indices = test_probs < 0
+    test_probs[indices] = 0
     submission = pd.DataFrame({"Id": test["Id"], "Sales": test_probs})
-    submission['Sales'] = submission['Sales'] + test.AvgSales
+    # submission['Sales'] = submission['Sales'] + test.AvgSales
 
     # closed stores sale none
     def fix_closed(row):
@@ -109,9 +113,7 @@ def run_forecaster(forecaster):
 
 
     save_results_df(submission, "{}-{}-final-pred.csv".format(type(forecaster).__name__, TRIAL))
-    print("{}, {}".format(type(forecaster).__name__, score))
     print(TRIAL)
-    return type(forecaster).__name__, score
 
 
 def load_best_params(forecaster, trial):
@@ -141,6 +143,8 @@ if __name__ == '__main__':
             params = load_best_params(forecaster, TRIAL)[0]
             forecaster = forecaster(**params)
             model, score = run_forecaster(forecaster)
+            # forecaster.model = forecaster.load_model("/home/mshaban/DeployedProjects/Predictive-Analysis/models/MDNetwork-71-3")
+            # pred
         else:
             forecaster, params = search_hyper_params(forecaster)
             model, score = run_forecaster(forecaster)
