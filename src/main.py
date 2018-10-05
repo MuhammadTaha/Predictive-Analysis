@@ -5,14 +5,12 @@ try:
     from src.tests import *
     from src import visualize_data
     from src import tries
-    from src import model_selection
 except ModuleNotFoundError:
     print("Use relative import without src")
     from data.data_extraction import DataExtraction
     from tests import *
     import visualize_data
     import tries
-    import model_selection
 
 start_time = time.time()
 
@@ -34,6 +32,10 @@ if args["action"] == "try":
     tries.main()
 
 if args["action"] == "modelselection":
+    try:
+        from src import model_selection
+    except:
+        import model_selection
     model_selection.main()
 
 

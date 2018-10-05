@@ -1,5 +1,5 @@
 try:
-    from data_extraction import *
+    from src.data.data_extraction import *
 except ModuleNotFoundError:
     from .data_extraction import *
 import numpy as np

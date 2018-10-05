@@ -1,22 +1,16 @@
 """
 This is for tries that should not ent up in the actual app
 """
-
-from visualize_predictions import visualize_predictions
-import pdb
-import tensorflow as tf
-from forecaster import *
-from data import *
-
 try:
     from src.data import *
     from src.forecaster import *
-except ModuleNotFoundError:
-    print("Use relative import without src")
+    from src.visualize_predictions import visualize_predictions
+    from src.data.lstm_data import LSTMData
+    from src.data.feedforward_data import FeedForwardData
+except:
     from data import *
     from forecaster import *
-
-
+    from visualize_predictions import visualize_predictions
 src_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -127,23 +121,50 @@ def try_model_wo_sess(model_type, plot_dir=None):
     model.fit(data)
     print("score:", model.score(data.X_val, data.y_val))
     p = model.predict(data.X_val)
-    diff = np.array([p, data.y_val])[:,:,0].T
+    diff = np.array([p, data.y_val])[:, :, 0].T
     print("diff", diff.shape)
 
     visualize_predictions(model, plot_dir)
 
 
-def main():
-    d = Data()
+def test_lstm_data():
+    data = LSTMData(is_debug=True, update_disk=True)
+    print("We have {} train points".format(len(data.batch_info)))
+    data.train_test_split(list(range(500)), list(range(500, 750)))
+    X, Y = data.next_train_batch()
+    print("one train: X, Y: ", np.array(X).shape, np.array(Y).shape)
+    X, Y = data.all_test_data()
+    print("all test: X, Y: ", np.array(X).shape, np.array(Y).shape)
+
+    lstm = LSTMForecaster(num_timesteps=data.num_tsteps, features_count=data.features_count)
+    lstm.trained = True
+    # print("prediction before training", lstm.predict(data.X_val))
+    lstm.fit(data)
+    p = lstm.predict(data.X_val)
+    closed = np.where(data.X_val[:, -1] == 0)[0]
+    if np.any(p[closed] > 0):
+        print(">0 where store is closed")
+
+    print("score after training", lstm.score(data.X_val, data.y_val))
+
+
+def prepare_cluster():
+    LSTMData(update_disk=True)
+    FeedForwardData()
+
+
+if __name__ == '__main__':
+    prepare_cluster()
+    #  test_lstm_data()
+    #  d = Data()
     #  choose the methods to try here
     #  time_series_example()
     #  howmanyfeatures()
     #  test_order_of_dates()
     #  time_series_example()
     #
-    # linear_regression(train_new=False)
-    AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
-    #feedforwardnn(train_new=True)
-    #naive_classifier()
-    # try_model_wo_sess(NaiveForecaster2)
-
+    #  linear_regression(train_new=False)
+    #  AbstractData.next_train_batch(AbstractData,store_id = 2,forecaster = "linear regressor" , batch_size= 10)
+    #  feedforwardnn(train_new=True)
+    #  naive_classifier()
+    #  try_model_wo_sess(NaiveForecaster2)

@@ -7,12 +7,10 @@ import tensorflow as tf
 try:
     from src.data.feedforward_data import FeedForwardData as Data
     from src.data.predicted_data import PredictedTimeseriesData
-    from src.forecaster import LinearRegressor
 except ModuleNotFoundError:
     print("Use relative import without src")
     from data.feedforward_data import FeedForwardData as Data
     from data.predicted_data import PredictedTimeseriesData
-    from forecaster import LinearRegressor
 
 import pdb
 
@@ -107,27 +105,6 @@ def visualize_time_series():
     plt.ylabel("Average Sales")
     plt.savefig(src_dir+"/../plots/weekdays.png")
 
-
-def visualize_linear_dependencies():
-    # train a linear model and plot the weights
-    # visualize time series of predictions
-    # scatter plot the most interesting features (with the highest weight)
-    with tf.Session() as sess:
-        data = Data()
-        model = LinearRegressor(sess=sess,
-                                plot_dir=src_dir+"/../plots/linear-regression",
-                                features_count=data.features_count)
-        sess.run(tf.global_variables_initializer())
-
-        try:
-            model.fit(data)
-        except Exception as e:
-            print(type(e), e)
-            pdb.set_trace()
-            model.fit(data)
-
-        model.save()
-        pdb.set_trace()
 
 
 def visualize_predictions(forecaster, data, output_dir):

@@ -1,1 +1,0 @@
-[{"params": {"hidden_features": [100], "predict_logs": false}, "score": 0.9847899675369263}, {"params": {"hidden_features": [100, 100], "predict_logs": false}, "score": 0.9848851561546326}]
