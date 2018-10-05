@@ -1,7 +1,6 @@
 from keras import Sequential, callbacks
 from keras.engine.saving import load_model
 from keras.layers import BatchNormalization, Dense
-from sklearn.base import BaseEstimator
 from sklearn.metrics import mean_absolute_error
 
 try:
@@ -21,10 +20,9 @@ def bias_variable(shape): return tf.Variable(tf.constant(0.1, shape=shape))
 
 class FeedForward(AbstractForecaster):
     params_grid = {
-        "units": np.linspace(100, 200, num=5).astype(int),
+        "units": np.linspace(120, 160, num=5).astype(int),
         "activation": ["tanh", "sigmoid"],
-        # "drop_out": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
-        "n_layers": [1, 2, 3, 4, 5],
+        "n_layers": [2, 3, 4],
         "kernel_regularizer": ["l1_l2", "l1", "l2", None]
     }
 
@@ -51,11 +49,15 @@ class FeedForward(AbstractForecaster):
     def _decision_function(self, X):
         return np.squeeze(self.model.predict(X))
 
-    def _train(self, data, **kwargs):
-        X, y = data.all_train_data()
+    def _train(self, X, y, **kwargs):
         early_callback = callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=0, mode='auto',
                                                  baseline=None, )
-        history = self.model.fit(X, y, validation_split=0.2, epochs=kwargs["epochs"], callbacks=[early_callback])
+        # if kwargs["epochs"] > 1000:
+        batch_size = int(X.shape[0] / 200)
+        # else:
+        #     batch_size = int(X.shape[0] / 10)
+        history = self.model.fit(X, y, validation_split=0.2, epochs=kwargs["epochs"], callbacks=[early_callback],
+                                 batch_size=batch_size)
 
         return history
 

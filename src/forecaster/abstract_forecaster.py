@@ -6,7 +6,7 @@ import datetime
 import tensorflow as tf
 import numpy as np
 import pdb
-
+from sklearn.metrics import mean_absolute_error
 import logging
 try:
     from src.data.feature_enum import *
@@ -71,12 +71,12 @@ class AbstractForecaster(ABC):
         else:
             self.loaded = False
 
-    def fit(self, data, **kwargs):
+    def fit(self, X, y, **kwargs):
         self.trained = True
-        return self._train(data, **kwargs)
+        return self._train(X, y, **kwargs)
 
     @abstractmethod
-    def _train(self, data):
+    def _train(self, X, y):
         """
             Override with your model training function
         """
@@ -110,6 +110,9 @@ class AbstractForecaster(ABC):
             Here comes the logic of your predictions
         """
         pass
+    def score(self, X, y):
+        predictions = self._decision_function(X)
+        return mean_absolute_error(y, predictions)
 
     @abstractmethod
     def _build(self):
@@ -131,13 +134,13 @@ class AbstractForecaster(ABC):
         return backtesting_instance.evaluate()
     """
 
-    @abstractmethod
-    def score(self, X, y):
-        """
-            used to get an impression of the performance of the current model.
-        """
-        p = self.predict(X)
-        return rmspe(y, p)
+    # @abstractmethod
+    # def score(self, X, y):
+    #     """
+    #         used to get an impression of the performance of the current model.
+    #     """
+    #     p = self.predict(X)
+    #     return rmspe(y, p)
 
     @staticmethod
     def load_model(file_name):

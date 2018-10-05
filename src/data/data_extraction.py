@@ -34,6 +34,9 @@ class DataExtraction:
         if train_path and test_path:
             self.final_test = pd.read_csv(test_path)
             self.data = pd.read_csv(train_path)
+            # self.final_test = self.final_test.sample(frac=1)
+            # self.data = self.data.sample(frac=1.0)
+
         else:
             # load into pandas
             self.store = pd.read_csv(data_dir + "/store.csv")
@@ -58,6 +61,8 @@ class DataExtraction:
             self.features_count = self._extract_rows([1])[0].shape[1]
             self.p_val = 0.2
             self.p_train = 0.8
+
+
 
     def prepare_data_for_extraction(self):
         # Dropping features with high missing values percentage
@@ -195,12 +200,12 @@ class DataExtraction:
         self.data = self.data.sample(frac=1).reset_index(drop=True)
 
         # adding sales avg
-        # sales_avg = self.data[['DayOfWeek', 'Store', 'Sales']].groupby(['DayOfWeek', 'Store']).mean()
-        # sales_avg = sales_avg.reset_index()
-        # self.sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
-        # self.data = pd.merge(self.data, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
+        sales_avg = self.data[['DayOfWeek', 'Store', 'Sales']].groupby(['DayOfWeek', 'Store']).mean()
+        sales_avg = sales_avg.reset_index()
+        self.sales_avg = sales_avg.rename(columns={'Sales': 'AvgSales'})
+        self.data = pd.merge(self.data, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
 
-
+        self.data.Sales = self.data.Sales - self.data.AvgSales
         #
         # # adding avg sales to data frame
         # sales_avg = self.data[['Year', 'Month', 'Store', 'Sales']].groupby(['Year', 'Month', 'Store']).mean()
@@ -246,10 +251,8 @@ class DataExtraction:
 
         self.final_test = self.final_test.sample(frac=1).reset_index(drop=True)
 
-        # self.final_test = pd.merge(self.final_test, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
-        # self.final_test.fillna(0.0, inplace=True)
-
-
+        self.final_test = pd.merge(self.final_test, self.sales_avg, how='left', on=('Store', 'DayOfWeek'))
+        self.final_test.fillna(0.0, inplace=True)
 
 
 

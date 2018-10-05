@@ -148,11 +148,11 @@ def output_layer(args):
 
 class MDNetwork(FeedForward):
     params_grid = {
-        "units": np.linspace(100, 200, num=5).astype(int),
+        "units": np.linspace(120, 160, num=5).astype(int),
         "activation": ["tanh", "sigmoid"],
         "kernel_regularizer": ["l1", "l2", "l1_l2", None],
-        "n_layers": [2, 3, 4, 5],
-        "MDN_COMPONENTS": np.linspace(1, 5, 5).astype(int)
+        "n_layers": [2, 3, 4],
+        "MDN_COMPONENTS": np.linspace(2, 5, 3).astype(int)
     }
     MDN_OUTPUT_DIM = 1
 
@@ -179,7 +179,7 @@ class MDNetwork(FeedForward):
         learning_rate = 0.01
 
         self.model = Sequential()
-
+        self.model.add(BatchNormalization(axis=1))
         for _ in range(self.n_layer):
             if _ == 0:
                 self.model.add(

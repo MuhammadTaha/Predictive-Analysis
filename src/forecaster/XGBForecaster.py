@@ -1,6 +1,6 @@
 # from sklearn.cross_validation import train_test_split
 import xgboost as xgb
-
+from sklearn.metrics import mean_absolute_error
 from src.data import FeedForwardData
 
 try:
@@ -15,15 +15,24 @@ class XGBForecaster(AbstractForecaster):
         pass
 
     params_grid = {
-        'n_estimators': np.linspace(500, 1000, num=5).astype(int),
-        'max_depth': np.linspace(10, 20, num=5).astype(int),
-        "eta": np.linspace(0.1, 0.3, num=5),
+        'n_estimators': np.linspace(500, 700, num=3).astype(int),
+        'max_depth': np.linspace(10, 15, num=3).astype(int),
+        "eta": [0.2],
         "objective": ["gpu:reg:linear"],
         "booster": ["gbtree"],
-        "subsample": np.linspace(0.7, 1.0, 5),
+        "subsample": np.linspace(0.8, 0.9, 3),
         "colsample_bytree": [0.7],
         "silent": [1]
     }
+
+    params = {"objective": "gpu:reg:linear",
+              "booster": "gbtree",
+              "eta": 0.2,
+              "max_depth": 12,
+              "subsample": 0.9,
+              "colsample_bytree": 0.7,
+              "silent": 1
+              }
 
     # initial_params = {
     #     'n_estimators': 800,
@@ -39,15 +48,13 @@ class XGBForecaster(AbstractForecaster):
         super().__init__()
         self.params = kwargs
 
-    def _train(self, data, **kwargs):
-        X, y = data.all_train_data()
+    def _train(self, X, y, **kwargs):
         split = int(len(X) * 0.05)
-        X_train, y_train = data.all_train_data()
-        dtrain = xgb.DMatrix(X_train[split:], y_train[split:])
-        dtest = xgb.DMatrix(X_train[:split], y_train[:split])
+        dtrain = xgb.DMatrix(X[split:], y[split:])
+        dtest = xgb.DMatrix(X[:split], y[:split])
         watchlist = [(dtrain, 'train'), (dtest, 'eval')]
         self.model = xgb.train(self.params, dtrain, kwargs['n_rounds'], evals=watchlist, early_stopping_rounds=100,
-                               feval=self.rmspe_xg)
+                               feval=self.loss, )
         # return self.model.__dict__
 
     def save(self, trial):
@@ -60,17 +67,23 @@ class XGBForecaster(AbstractForecaster):
     def _decision_function(self, X):
         return self.model.predict(xgb.DMatrix(X))
 
-    def score(self, X, y):
-        predictions = self._decision_function(X)
-        error = self.rmspe(y, predictions)
-        print("Validation score: {:.4f}".format(error))
-        return error
+    # def score(self, X, y):
+    #     predictions = self._decision_function(X)
+    #     error = self.rmspe(y, predictions)
+    #     print("Validation score: {:.4f}".format(error))
+    #     return error
 
     # def _search_hyper_params(self, X_train, y_train):
     #     initial_model = xgb.XGBRegressor(**self.initial_params)
     #     search_model = RandomizedSearchCV(initial_model, self.params_grid, cv=6)
     #     search_model = search_model.fit(X_train, y_train)
     #     return {**search_model.best_params_, **self.initial_params}
+
+    @staticmethod
+    def loss(yhat, y):
+        y = y.get_label()
+        error = np.mean(np.absolute(yhat - y))
+        return "mae", error
 
     @staticmethod
     def ToWeight(y):
